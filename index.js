@@ -7,6 +7,8 @@ require('dotenv').config();
 app.use(cors());
 app.use(express.json());
 
+const PORT = process.env.PORT || 3500;
+
 const auth = new google.auth.GoogleAuth({
     keyFile: "credenciales.json",
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
@@ -159,6 +161,6 @@ app.post("/pensionato", async (req, res) => {
     }
   });
 
-app.listen(3500, () => {
-    console.log('Servidor corriendo en http://localhost:3500');
+app.listen(PORT, () => {
+    console.log('Servidor corriendo en el puerto', PORT);
 });
