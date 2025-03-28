@@ -12,6 +12,10 @@ const auth = new google.auth.GoogleAuth({
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
+app.get('/', (req, res) => {
+    res.send('API funcionando correctamente');
+});
+
 app.post('/sheets', async (req, res) => {
     try {
         const client = await auth.getClient();
