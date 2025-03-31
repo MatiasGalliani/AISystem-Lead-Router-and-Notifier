@@ -186,7 +186,7 @@ app.post("/aifidiform", async (req, res) => {
         // Asumiendo que la hoja se llama "AifidiForm" y usas 11 columnas
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
-            range: "AifidiForm!A1:K1",
+            range: "AIFidi.it!A1:K1",
             valueInputOption: "USER_ENTERED",
             resource: {
                 values: [
