@@ -176,7 +176,6 @@ app.post("/aimediciform", async (req, res) => {
     } = req.body;
 
     try {
-        // Autenticación con Google Sheets
         const auth = new google.auth.GoogleAuth({
             keyFile: "./credenciales.json",
             scopes: ["https://www.googleapis.com/auth/spreadsheets"],
@@ -184,20 +183,9 @@ app.post("/aimediciform", async (req, res) => {
         const sheets = google.sheets({ version: "v4", auth });
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
-        // Se asume que la hoja se llama "AiMedici.it" y que usas 10 columnas:
-        // Columna A: Fecha y hora de envío
-        // Columna B: financingScope
-        // Columna C: importoRichiesto
-        // Columna D: cittaResidenza
-        // Columna E: provinciaResidenza
-        // Columna F: nome
-        // Columna G: cognome
-        // Columna H: mail
-        // Columna I: telefono
-        // Columna J: privacyAccepted ("SI" o "NO")
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
-            range: "AiMedici.it!A1:J1",
+            range: "AIMedici.it!A1:J1",
             valueInputOption: "USER_ENTERED",
             resource: {
                 values: [
