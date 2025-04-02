@@ -161,50 +161,60 @@ app.post("/dipendente", async (req, res) => {
     }
 });
 
-app.post("/aifidiform", async (req, res) => {
+app.post("/aimediciform", async (req, res) => {
+    // Extraemos los datos enviados desde el formulario
     const {
+        financingScope,
+        importoRichiesto,
+        cittaResidenza,
+        provinciaResidenza,
         nome,
         cognome,
         mail,
         telefono,
-        financingScope,
-        nomeAzienda,
-        cittaSedeLegale,
-        cittaSedeOperativa,
-        importoRichiesto,
         privacyAccepted
     } = req.body;
 
     try {
+        // Autenticación con Google Sheets
         const auth = new google.auth.GoogleAuth({
             keyFile: "./credenciales.json",
-            scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+            scopes: ["https://www.googleapis.com/auth/spreadsheets"],
         });
         const sheets = google.sheets({ version: "v4", auth });
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
-        // Asumiendo que la hoja se llama "AifidiForm" y usas 11 columnas
+        // Se asume que la hoja se llama "AiMedici.it" y que usas 10 columnas:
+        // Columna A: Fecha y hora de envío
+        // Columna B: financingScope
+        // Columna C: importoRichiesto
+        // Columna D: cittaResidenza
+        // Columna E: provinciaResidenza
+        // Columna F: nome
+        // Columna G: cognome
+        // Columna H: mail
+        // Columna I: telefono
+        // Columna J: privacyAccepted ("SI" o "NO")
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
-            range: "AIFidi.it!A1:K1",
+            range: "AiMedici.it!A1:J1",
             valueInputOption: "USER_ENTERED",
             resource: {
                 values: [
                     [
-                        new Date().toLocaleString("it-IT"), // Fecha y hora de envío
+                        new Date().toLocaleString("it-IT"), // Fecha y hora
                         nome,
                         cognome,
+                        financingScope,
+                        importoRichiesto,
+                        cittaResidenza,
+                        provinciaResidenza,
                         mail,
                         telefono,
-                        financingScope,
-                        nomeAzienda,
-                        cittaSedeLegale,
-                        cittaSedeOperativa,
-                        importoRichiesto,
-                        privacyAccepted ? "SI" : "NO"
-                    ]
-                ]
-            }
+                        privacyAccepted ? "SI" : "NO",
+                    ],
+                ],
+            },
         });
 
         res.status(200).json({ message: "Dati salvati con successo!" });
