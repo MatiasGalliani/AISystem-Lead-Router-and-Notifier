@@ -4,6 +4,42 @@ const app = express();
 const cors = require('cors');
 require('dotenv').config();
 
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_PORT == 465,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
+async function sendEmail(data) {
+    const mailOptions = {
+        from: process.env.SMTP_FROM,               // Remitente configurado en el .env
+        to: process.env.AGENT_EMAIL,               // Email del agente
+        subject: "Nuovo invio dati dal modulo",    // Asunto del correo
+        html: `
+          <p>Ciao,</p>
+          <p>È stato ricevuto un nuovo invio dal modulo con i seguenti dati:</p>
+          <ul>
+            ${data.map(item => `<li>${item}</li>`).join('')}
+          </ul>
+          <p>Cordiali saluti,</p>
+          <p>€ugenio by Creditplan</p>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('Correo enviado correctamente.');
+    } catch (error) {
+        console.error('Error al enviar el correo:', error);
+    }
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -22,18 +58,17 @@ app.post('/sheets', async (req, res) => {
     try {
         const client = await auth.getClient();
         const sheets = google.sheets({ version: 'v4', auth: client });
-
         const spreadsheetID = process.env.GOOGLE_SHEET_ID;
         const range = "'Manual Leads'!A1:D1";
-
         const { datos } = req.body;
 
         if (!Array.isArray(datos)) {
             return res.status(400).json({ error: 'Datos debe ser un array' });
         }
 
+        // Guardar datos en Google Sheets
         await sheets.spreadsheets.values.append({
-            spreadsheetId: spreadsheetID, //
+            spreadsheetId: spreadsheetID,
             range,
             valueInputOption: 'RAW',
             requestBody: {
@@ -41,11 +76,13 @@ app.post('/sheets', async (req, res) => {
             },
         });
 
-        res.json({ message: 'Datos guardados con éxito' });
+        // Enviar email al agente
+        await sendEmail(datos);
 
+        res.json({ message: 'Datos guardados y email enviado con éxito' });
     } catch (error) {
-        console.error('Error al guardar en Sheets:', error);
-        res.status(500).json({ error: 'Ocurrió un error al guardar los datos' });
+        console.error('Error al guardar en Sheets o enviar email:', error);
+        res.status(500).json({ error: 'Ocurrió un error al guardar los datos o enviar el email' });
     }
 });
 
@@ -162,94 +199,55 @@ app.post("/dipendente", async (req, res) => {
 });
 
 app.post("/aimediciform", async (req, res) => {
+    // Extraemos los datos enviados desde el formulario
     const {
-      financingScope,
-      importoRichiesto,
-      cittaResidenza,
-      provinciaResidenza,
-      nome,
-      cognome,
-      mail,
-      telefono,
-      privacyAccepted
+        financingScope,
+        importoRichiesto,
+        cittaResidenza,
+        provinciaResidenza,
+        nome,
+        cognome,
+        mail,
+        telefono,
+        privacyAccepted
     } = req.body;
-  
+
     try {
-      // Autenticación para Sheets y Gmail
-      const auth = new google.auth.GoogleAuth({
-        keyFile: "./credenciales.json",
-        scopes: [
-          "https://www.googleapis.com/auth/spreadsheets",
-          "https://www.googleapis.com/auth/gmail.send"
-        ],
-      });
-      const authClient = await auth.getClient();
-  
-      // Guardar datos en Google Sheets
-      const sheets = google.sheets({ version: "v4", auth: authClient });
-      const sheetId = process.env.GOOGLE_SHEET_ID;
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: sheetId,
-        range: "AIMedici.it!A1:J1",
-        valueInputOption: "USER_ENTERED",
-        resource: {
-          values: [
-            [
-              new Date().toLocaleString("it-IT"), // Fecha y hora
-              nome,
-              cognome,
-              financingScope,
-              importoRichiesto,
-              cittaResidenza,
-              provinciaResidenza,
-              mail,
-              telefono,
-              privacyAccepted ? "SI" : "NO",
-            ],
-          ],
-        },
-      });
-  
-      // Crear el mensaje de correo
-      const emailLines = [
-        `From: "€ugenio by Creditplan" <it.creditplan@gmail.com>`,
-        `To: ${"matiasgalliani00@gmail.com"}`,
-        "Subject: Nuovo lead da AIMedici.it",
-        `Ciao Agente,`,
-        `C'è un nuovo lead da AIMedici.it:`,
-        `- Nome: ${nome} ${cognome}`,
-        `- Scopo della consulenza: ${financingScope}`,
-        `- Importo Richiesto: ${importoRichiesto}`,
-        `- Città: ${cittaResidenza}, Provincia: ${provinciaResidenza}`,
-        `- Mail: ${mail}`,
-        `- Telefono: ${telefono}`,
-        "Grazie per la tua attenzione!",
-        "Cordiali saluti,",
-      ];
-      const emailBody = emailLines.join("\r\n");
-  
-      // Codificar el mensaje en Base64 (URL-safe)
-      const encodedMessage = Buffer.from(emailBody)
-        .toString("base64")
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
-  
-      // Enviar el correo usando la API de Gmail
-      const gmail = google.gmail({ version: "v1", auth: authClient });
-      await gmail.users.messages.send({
-        userId: "me",
-        requestBody: {
-          raw: encodedMessage,
-        },
-      });
-  
-      res.status(200).json({ message: "Datos guardados y email enviado con éxito!" });
+        const auth = new google.auth.GoogleAuth({
+            keyFile: "./credenciales.json",
+            scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+        });
+        const sheets = google.sheets({ version: "v4", auth });
+        const sheetId = process.env.GOOGLE_SHEET_ID;
+
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId,
+            range: "AIMedici.it!A1:J1",
+            valueInputOption: "USER_ENTERED",
+            resource: {
+                values: [
+                    [
+                        new Date().toLocaleString("it-IT"), // Fecha y hora
+                        nome,
+                        cognome,
+                        financingScope,
+                        importoRichiesto,
+                        cittaResidenza,
+                        provinciaResidenza,
+                        mail,
+                        telefono,
+                        privacyAccepted ? "SI" : "NO",
+                    ],
+                ],
+            },
+        });
+
+        res.status(200).json({ message: "Dati salvati con successo!" });
     } catch (error) {
-      console.error("Error en el proceso:", error);
-      res.status(500).json({ error: "Error en el proceso" });
+        console.error("Errore nell'invio dei dati:", error);
+        res.status(500).json({ error: "Errore nell'invio dei dati" });
     }
-  });  
+});
 
 app.listen(PORT, () => {
     console.log('Servidor corriendo en el puerto', PORT);
