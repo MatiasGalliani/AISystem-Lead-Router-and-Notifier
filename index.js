@@ -214,10 +214,9 @@ app.post("/aimediciform", async (req, res) => {
       const emailLines = [
         `From: "€ugenio by Creditplan" <it.creditplan@gmail.com>`,
         `To: ${"matiasgalliani00@gmail.com"}`,
-        "Subject: Confirmación de envío de formulario",
-        "",
+        "Subject: Nuovo lead da AIMedici.it",
         `Ciao Agente,`,
-        "C'è un nuovo lead da AIMedici.it:",
+        `C'è un nuovo lead da AIMedici.it:`,
         `- Nome: ${nome} ${cognome}`,
         `- Scopo della consulenza: ${financingScope}`,
         `- Importo Richiesto: ${importoRichiesto}`,
