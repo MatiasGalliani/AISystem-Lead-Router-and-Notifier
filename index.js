@@ -6,14 +6,26 @@ require('dotenv').config();
 
 const nodemailer = require('nodemailer');
 
+// Conversión explícita del puerto a número
+const smtpPort = Number(process.env.SMTP_PORT);
+
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_PORT == 465,
+    port: smtpPort,
+    secure: smtpPort === 465, // true para puerto 465
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
     },
+});
+
+// Verifica la conexión al servidor SMTP
+transporter.verify((error, success) => {
+    if (error) {
+        console.error('Error en la verificación del transporter:', error);
+    } else {
+        console.log('Transporter listo para enviar emails.');
+    }
 });
 
 async function sendEmail(data) {
@@ -86,6 +98,7 @@ app.post('/sheets', async (req, res) => {
     }
 });
 
+// Rutas adicionales...
 app.post("/pensionato", async (req, res) => {
     const {
         nome,
