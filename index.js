@@ -313,6 +313,54 @@ app.post("/aimediciform", async (req, res) => {
     }
 });
 
+app.post("/aifidi", async (req, res) => {
+    const {
+        nome,
+        cognome,
+        financingScope,
+        importoRichiesto,
+        nomeAzienda,
+        cittaSedeLegale,
+        cittaSedeOperativa,
+        mail,
+        telefono,
+        privacyAccepted
+    } = req.body;
+
+    try {
+        const sheets = await getGoogleSheetsClient();
+        const sheetId = process.env.GOOGLE_SHEET_ID;
+
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId,
+            range: "AIFidi!A1:K1",
+            valueInputOption: "USER_ENTERED",
+            resource: {
+                values: [
+                    [
+                        new Date().toLocaleString("it-IT"),
+                        nome,
+                        cognome,
+                        financingScope,
+                        importoRichiesto,
+                        nomeAzienda,
+                        cittaSedeLegale,
+                        cittaSedeOperativa,
+                        mail,
+                        telefono,
+                        privacyAccepted ? "SI" : "NO",
+                    ],
+                ],
+            },
+        });
+
+        res.status(200).json({ message: "Dati salvati con successo!" });
+    } catch (error) {
+        console.error("Errore nell'invio dei dati:", error);
+        res.status(500).json({ error: "Errore nell'invio dei dati" });
+    }
+});
+
 app.listen(PORT, () => {
     console.log('Servidor corriendo en el puerto', PORT);
 });
