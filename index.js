@@ -121,7 +121,7 @@ Saluti,
     <div class="container">
       <div class="header">
         <img class="logo" 
-            src="https://i.imgur.com/7Q4v3wL.png"
+            src="https://i.imgur.com/Wzz0KLR.png"
             alt="€ugenio IA"
             style="width: 150px; height: auto;" 
         />
@@ -138,7 +138,7 @@ Saluti,
       <div class="footer">
         <p>Saluti</p>
         <img class="logo" 
-            src="https://i.imgur.com/7Q4v3wL.png"
+            src="https://i.imgur.com/Wzz0KLR.png"
             alt="€ugenio IA"
             style="width: 150px; height: auto;" 
         />
