@@ -74,18 +74,53 @@ Saluti,
   <head>
     <meta charset="UTF-8">
     <style>
-      body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 0; }
-      .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
-      .header { background-color: #007bff; color: #fff; padding: 10px; text-align: center; border-radius: 6px 6px 0 0; }
-      .content { padding: 20px; }
-      .data-item { margin-bottom: 10px; }
-      .label { font-weight: bold; }
-      .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #777; }
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+      }
+      .header {
+        background-color: #007bff;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+        border-radius: 6px 6px 0 0;
+      }
+      .logo {
+        max-width: 150px;
+        height: auto;
+        margin-bottom: 10px;
+      }
+      .content {
+        padding: 20px;
+      }
+      .data-item {
+        margin-bottom: 10px;
+      }
+      .label {
+        font-weight: bold;
+      }
+      .footer {
+        margin-top: 20px;
+        font-size: 12px;
+        text-align: center;
+        color: #777;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
+        <img class="logo" src="https://drive.google.com/uc?export=view&id=13ye3ivW3b6cIVpCIg9unPBz62t30yTHT" alt="€ugenio IA" />
         <h2>Nuovo Lead di Contatto Manuale</h2>
       </div>
       <div class="content">
@@ -97,7 +132,8 @@ Saluti,
         <div class="data-item"><span class="label">Telefono:</span> ${telefono}</div>
       </div>
       <div class="footer">
-        <p>Saluti<br><img src="https://drive.google.com/uc?export=view&id=13ye3ivW3b6cIVpCIg9unPBz62t30yTHT" alt="Logo Creditplan" style="width: 150px; height: auto;" /></p>
+        <p>Saluti</p>
+        <img class="logo" src="https://drive.google.com/uc?export=view&id=13ye3ivW3b6cIVpCIg9unPBz62t30yTHT" alt="€ugenio IA" />
       </div>
     </div>
   </body>
