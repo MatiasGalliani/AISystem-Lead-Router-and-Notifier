@@ -120,7 +120,11 @@ Saluti,
   <body>
     <div class="container">
       <div class="header">
-        <img class="logo" src="https://drive.google.com/uc?export=view&id=13ye3ivW3b6cIVpCIg9unPBz62t30yTHT" alt="€ugenio IA" />
+        <img class="logo" 
+            src="https://i.imgur.com/7Q4v3wL.png"
+            alt="€ugenio IA"
+            style="width: 150px; height: auto;" 
+        />
         <h2>Nuovo Lead di Contatto Manuale</h2>
       </div>
       <div class="content">
@@ -133,8 +137,11 @@ Saluti,
       </div>
       <div class="footer">
         <p>Saluti</p>
-        <img class="logo" src="https://drive.google.com/uc?export=view&id=13ye3ivW3b6cIVpCIg9unPBz62t30yTHT" alt="€ugenio IA" />
-      </div>
+        <img class="logo" 
+            src="https://i.imgur.com/7Q4v3wL.png"
+            alt="€ugenio IA"
+            style="width: 150px; height: auto;" 
+        />
     </div>
   </body>
 </html>`;
