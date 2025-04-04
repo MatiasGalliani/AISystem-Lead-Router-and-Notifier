@@ -1,21 +1,49 @@
-const postmark = require("postmark");
-require("dotenv").config();
+app.post("/aimediciform", async (req, res) => {
+    const {
+        financingScope,
+        importoRichiesto,
+        cittaResidenza,
+        provinciaResidenza,
+        nome,
+        cognome,
+        mail,
+        telefono,
+        privacyAccepted
+    } = req.body;
 
-const client = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
+    try {
+        const auth = new google.auth.GoogleAuth({
+            keyFile: "./credenciales.json",
+            scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+        });
+        const sheets = google.sheets({ version: "v4", auth });
+        const sheetId = process.env.GOOGLE_SHEET_ID;
 
-async function enviarEmail() {
-  try {
-    const result = await client.sendEmail({
-      "From": "it@creditplan.it",
-      "To": "segreteria@creditplan.it",
-      "Subject": "Hola desde Postmark!",
-      "TextBody": "Este es un correo de prueba usando Postmark API.",
-      "HtmlBody": "<strong>Este es un correo de prueba usando Postmark API.</strong>"
-    });
-    console.log("Email enviado exitosamente:", result);
-  } catch (error) {
-    console.error("Error al enviar el email:", error);
-  }
-}
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId,
+            range: "AIMedici.it!A1:J1",
+            valueInputOption: "USER_ENTERED",
+            resource: {
+                values: [
+                    [
+                        new Date().toLocaleString("it-IT"),
+                        nome,
+                        cognome,
+                        financingScope,
+                        importoRichiesto,
+                        cittaResidenza,
+                        provinciaResidenza,
+                        mail,
+                        telefono,
+                        privacyAccepted ? "SI" : "NO",
+                    ],
+                ],
+            },
+        });
 
-enviarEmail();
+        res.status(200).json({ message: "Dati salvati con successo!" });
+    } catch (error) {
+        console.error("Errore nell'invio dei dati:", error);
+        res.status(500).json({ error: "Errore nell'invio dei dati" });
+    }
+});
