@@ -2,6 +2,8 @@ const express = require('express');
 const { google } = require('googleapis');
 const app = express();
 const cors = require('cors');
+const postmark = require("postmark");
+
 require('dotenv').config();
 
 app.use(cors());
@@ -23,11 +25,12 @@ app.get('/', (req, res) => {
 // Endpoint para guardar datos en Google Sheets (Manual Leads)
 app.post('/sheets', async (req, res) => {
     try {
+        // Autenticación y configuración de Google Sheets
         const client = await auth.getClient();
         const sheets = google.sheets({ version: 'v4', auth: client });
         const spreadsheetID = process.env.GOOGLE_SHEET_ID;
         const range = "'Manual Leads'!A1:D1";
-        const { datos } = req.body;
+        const { datos } = req.body;  // Se espera que 'email' venga en el body
 
         if (!Array.isArray(datos)) {
             return res.status(400).json({ error: 'Datos debe ser un array' });
@@ -43,10 +46,25 @@ app.post('/sheets', async (req, res) => {
             },
         });
 
-        res.json({ message: 'Datos guardados con éxito' });
+        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
+
+        // Prepara los datos del email
+        const emailData = {
+            "From": "it@creditplan.it", // Debe estar verificado en Postmark
+            "To": "segreteria@creditplan.it",                // Email recibido en el body
+            "Subject": "TEST",
+            "TextBody": "TEST",
+            "HtmlBody": "TEST"
+        };
+
+        // Enviar el email
+        await postmarkClient.sendEmail(emailData);
+
+        // Responde al cliente
+        res.json({ message: 'Datos guardados y email enviado con éxito' });
     } catch (error) {
-        console.error('Error al guardar en Sheets:', error);
-        res.status(500).json({ error: 'Ocurrió un error al guardar los datos' });
+        console.error('Error al guardar en Sheets o enviar email:', error);
+        res.status(500).json({ error: 'Ocurrió un error al procesar la solicitud' });
     }
 });
 
