@@ -2,8 +2,7 @@ const express = require('express');
 const { google } = require('googleapis');
 const app = express();
 const cors = require('cors');
-const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
+const postmark = require("postmark");
 
 require('dotenv').config();
 
@@ -29,21 +28,25 @@ app.get('/', (req, res) => {
 // Endpoint para guardar datos en Google Sheets (Manual Leads)
 app.post('/manuale_aiquinto', async (req, res) => {
     try {
+        // Autenticación y configuración de Google Sheets
         const sheets = await getGoogleSheetsClient();
         const spreadsheetID = process.env.GOOGLE_SHEET_ID;
-        const range = "'Manual Leads'!A1:E1";
+        const range = "'Manual Leads'!A1:E1"; // Ajusta el rango según la cantidad de columnas
 
+        // Suponemos que 'datos' es un array con [nome, cognome, email, telefono, ...otros]
         const datos = req.body.datos;
 
         if (!Array.isArray(datos)) {
             return res.status(400).json({ error: 'Datos debe ser un array' });
         }
 
+        // Extraer campos desde datos o desde propiedades separadas en req.body
         const nome = req.body.nome || (datos.length >= 1 ? datos[0] : 'Non specificato');
         const cognome = req.body.cognome || (datos.length >= 2 ? datos[1] : 'Non specificato');
         const emailField = req.body.email || (datos.length >= 3 ? datos[2] : 'Non specificato');
         const telefono = req.body.telefono || (datos.length >= 4 ? datos[3] : 'Non specificato');
 
+        // Guardar datos en Google Sheets
         await sheets.spreadsheets.values.append({
             spreadsheetId: spreadsheetID,
             range,
@@ -53,96 +56,109 @@ app.post('/manuale_aiquinto', async (req, res) => {
             },
         });
 
-        const textBody = `Nuovo Lead di Contatto Manuale
-  Ciao,
-  È arrivato un nuovo lead manuale su AIQuinto.it con i seguenti dettagli:
-  Nome: ${nome}
-  Cognome: ${cognome}
-  Email: ${emailField}
-  Telefono: ${telefono}
-  Saluti,
-  €ugenio IA`;
+        // Integración de Postmark: Enviar email de notificación
+        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
+
+        // Preparar el contenido del correo
+        const textBody =
+            `Nuovo Lead di Contatto Manuale
+Ciao,
+È arrivato un nuovo lead manuale su AIQuinto.it con i seguenti dettagli:
+Nome: ${nome}
+Cognome: ${cognome}
+Email: ${emailField}
+Telefono: ${telefono}
+Saluti,
+€ugenio IA`;
 
         const htmlBody = `
-  <html>
-    <head>
-      <meta charset="UTF-8">
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          background-color: #f4f4f4;
-          color: #333;
-          margin: 0;
-          padding: 0;
-        }
-        .container {
-          max-width: 600px;
-          margin: 20px auto;
-          background: #fff;
-          padding: 20px;
-          border-radius: 8px;
-        }
-        .header {
-          background-color: #007bff;
-          color: #fff;
-          padding: 20px;
-          text-align: center;
-          border-radius: 6px 6px 0 0;
-        }
-        .content {
-          padding: 20px;
-        }
-        .data-item {
-          margin-bottom: 10px;
-        }
-        .label {
-          font-weight: bold;
-        }
-        .footer {
-          margin-top: 20px;
-          font-size: 12px;
-          text-align: center;
-          color: #777;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2>Nuovo Lead di Contatto Manuale</h2>
-        </div>
-        <div class="content">
-          <p>Ciao,</p>
-          <p>È arrivato un nuovo lead manuale con i seguenti dettagli:</p>
-          <div class="data-item"><span class="label">Nome:</span> ${nome}</div>
-          <div class="data-item"><span class="label">Cognome:</span> ${cognome}</div>
-          <div class="data-item"><span class="label">Email:</span> ${emailField}</div>
-          <div class="data-item"><span class="label">Telefono:</span> ${telefono}</div>
-        </div>
-        <div class="footer">
-          <p>Saluti</p>
-          <img class="logo" 
-              src="https://i.imgur.com/Wzz0KLR.png"
-              alt="€ugenio IA"
-              style="width: 150px; height: auto;" 
-          />
-        </div>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+      }
+      .header {
+        background-color: #007bff;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+        border-radius: 6px 6px 0 0;
+      }
+      .logo {
+        max-width: 150px;
+        height: auto;
+        margin-bottom: 10px;
+      }
+      .content {
+        padding: 20px;
+      }
+      .data-item {
+        margin-bottom: 10px;
+      }
+      .label {
+        font-weight: bold;
+      }
+      .footer {
+        margin-top: 20px;
+        font-size: 12px;
+        text-align: center;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>Nuovo Lead di Contatto Manuale</h2>
       </div>
-    </body>
-  </html>`;
+      <div class="content">
+        <p>Ciao,</p>
+        <p>È arrivato un nuovo lead manuale con i seguenti dettagli:</p>
+        <div class="data-item"><span class="label">Nome:</span> ${nome}</div>
+        <div class="data-item"><span class="label">Cognome:</span> ${cognome}</div>
+        <div class="data-item"><span class="label">Email:</span> ${emailField}</div>
+        <div class="data-item"><span class="label">Telefono:</span> ${telefono}</div>
+      </div>
+      <div class="footer">
+        <p>Saluti</p>
+        <img class="logo" 
+            src="https://i.imgur.com/Wzz0KLR.png"
+            alt="€ugenio IA"
+            style="width: 150px; height: auto;" 
+        />
+    </div>
+  </body>
+</html>`;
 
-        await resend.emails.send({
-            from: '€ugenio IA <it@creditplan.it>', // asegurate de verificar ese dominio en Resend
-            to: ['it@creditplan.it'],
-            subject: 'Nuovo Lead di Contatto Manuale',
-            text: textBody,
-            html: htmlBody
-        });
+        const emailData = {
+            "From": "€ugenio IA <eugenioia@creditplan.it>", // Asegúrate de que este remitente esté verificado en Postmark
+            "To": "it@creditplan.it",
+            "Subject": "Nuovo Lead di Contatto Manuale",
+            "TextBody": textBody,
+            "HtmlBody": htmlBody
+        };
 
-        res.json({ message: 'Dati salvati e email inviata con successo' });
+        // Enviar el email
+        await postmarkClient.sendEmail(emailData);
+
+        // Responder al cliente
+        res.json({ message: 'Datos guardados y email enviado con éxito' });
     } catch (error) {
-        console.error('Errore:', error);
-        res.status(500).json({ error: 'Errore durante il salvataggio o invio email' });
+        console.error('Error al guardar en Sheets o enviar email:', error);
+        res.status(500).json({ error: 'Ocurrió un error al procesar la solicitud' });
     }
 });
 
