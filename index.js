@@ -29,8 +29,8 @@ app.post('/sheets', async (req, res) => {
         const client = await auth.getClient();
         const sheets = google.sheets({ version: 'v4', auth: client });
         const spreadsheetID = process.env.GOOGLE_SHEET_ID;
-        const range = "'Manual Leads'!A1:D1";
-        const { datos, nome, cognome } = req.body;
+        const range = "'Manual Leads'!A1:E1"; // Ajusta el rango según la cantidad de columnas
+        const { datos, nome, cognome, email, telefono } = req.body;
 
         if (!Array.isArray(datos)) {
             return res.status(400).json({ error: 'Datos debe ser un array' });
@@ -49,27 +49,30 @@ app.post('/sheets', async (req, res) => {
         // Integración de Postmark: Enviar email de confirmación
         const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
 
-        // Prepara los datos del email con un diseño estilizado en italiano
-        const emailData = {
-            "From": "€ugenio IA <eugenioia@creditplan.it>", // Asegúrate de que este remitente esté verificado en Postmark
-            "To": "it@creditplan.it",
-            "Subject": "Nuovo Lead di Contatto Manuale",
-            "TextBody": `Nuovo Lead di Contatto Manuale
+        // Preparar el contenido del correo
+        const textBody =
+            `Nuovo Lead di Contatto Manuale
+Ciao,
+È arrivato un nuovo lead manuale con i seguenti dettagli:
 Nome: ${nome || 'Non specificato'}
 Cognome: ${cognome || 'Non specificato'}
-Altri dati: ${datos.join(', ')}
+Email: ${email || 'Non specificato'}
+Telefono: ${telefono || 'Non specificato'}
+Altri dati: ${datos.length > 0 ? datos.join(', ') : 'Nessun dato aggiuntivo'}
 Saluti,
-€ugenio IA`,
-            "HtmlBody": `
+€ugenio IA`;
+
+        const htmlBody = `
 <html>
   <head>
     <meta charset="UTF-8">
     <style>
-      body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; }
+      body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 0; }
       .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
       .header { background-color: #007bff; color: #fff; padding: 10px; text-align: center; border-radius: 6px 6px 0 0; }
       .content { padding: 20px; }
-      .content p { line-height: 1.6; }
+      .data-item { margin-bottom: 10px; }
+      .label { font-weight: bold; }
       .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #777; }
     </style>
   </head>
@@ -81,22 +84,31 @@ Saluti,
       <div class="content">
         <p>Ciao,</p>
         <p>È arrivato un nuovo lead manuale con i seguenti dettagli:</p>
-        <p><strong>Nome:</strong> ${nome || 'Non specificato'}</p>
-        <p><strong>Cognome:</strong> ${cognome || 'Non specificato'}</p>
-        <p><strong>Altri dati:</strong> ${datos.join(', ')}</p>
+        <div class="data-item"><span class="label">Nome:</span> ${nome || 'Non specificato'}</div>
+        <div class="data-item"><span class="label">Cognome:</span> ${cognome || 'Non specificato'}</div>
+        <div class="data-item"><span class="label">Email:</span> ${email || 'Non specificato'}</div>
+        <div class="data-item"><span class="label">Telefono:</span> ${telefono || 'Non specificato'}</div>
+        <div class="data-item"><span class="label">Altri dati:</span> ${datos.length > 0 ? datos.join(', ') : 'Nessun dato aggiuntivo'}</div>
       </div>
       <div class="footer">
         <p>Saluti,<br>€ugenio IA</p>
       </div>
     </div>
   </body>
-</html>`
+</html>`;
+
+        const emailData = {
+            "From": "€ugenio IA <it@creditplan.it>", // Asegúrate de que este remitente esté verificado en Postmark
+            "To": "segreteria@creditplan.it",
+            "Subject": "Nuovo Lead di Contatto Manuale",
+            "TextBody": textBody,
+            "HtmlBody": htmlBody
         };
 
         // Enviar el email
         await postmarkClient.sendEmail(emailData);
 
-        // Responde al cliente
+        // Responder al cliente
         res.json({ message: 'Datos guardados y email enviado con éxito' });
     } catch (error) {
         console.error('Error al guardar en Sheets o enviar email:', error);
