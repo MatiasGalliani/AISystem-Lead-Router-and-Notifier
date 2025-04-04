@@ -11,11 +11,14 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3500;
 
-// Configuración de autenticación con Google Sheets
-const auth = new google.auth.GoogleAuth({
-    keyFile: "credenciales.json",
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-});
+async function getGoogleSheetsClient() {
+    const auth = new google.auth.GoogleAuth({
+        keyFile: "./credenciales.json",
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+    const authClient = await auth.getClient();
+    return google.sheets({ version: "v4", auth: authClient });
+}
 
 // Endpoint raíz
 app.get('/', (req, res) => {
@@ -26,8 +29,7 @@ app.get('/', (req, res) => {
 app.post('/sheets', async (req, res) => {
     try {
         // Autenticación y configuración de Google Sheets
-        const client = await auth.getClient();
-        const sheets = google.sheets({ version: 'v4', auth: client });
+        const sheets = await getGoogleSheetsClient();
         const spreadsheetID = process.env.GOOGLE_SHEET_ID;
         const range = "'Manual Leads'!A1:E1"; // Ajusta el rango según la cantidad de columnas
 
@@ -177,12 +179,7 @@ app.post("/pensionato", async (req, res) => {
     } = req.body;
 
     try {
-        const auth = new google.auth.GoogleAuth({
-            keyFile: "./credenciales.json",
-            scopes: ["https://www.googleapis.com/auth/spreadsheets"]
-        });
-
-        const sheets = google.sheets({ version: "v4", auth });
+        const sheets = await getGoogleSheetsClient();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
         await sheets.spreadsheets.values.append({
@@ -234,12 +231,7 @@ app.post("/dipendente", async (req, res) => {
     } = req.body;
 
     try {
-        const auth = new google.auth.GoogleAuth({
-            keyFile: "./credenciales.json",
-            scopes: ["https://www.googleapis.com/auth/spreadsheets"]
-        });
-
-        const sheets = google.sheets({ version: "v4", auth });
+        const sheets = await getGoogleSheetsClient();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
         await sheets.spreadsheets.values.append({
@@ -288,12 +280,8 @@ app.post("/aimediciform", async (req, res) => {
         privacyAccepted
     } = req.body;
 
-    try {
-        const auth = new google.auth.GoogleAuth({
-            keyFile: "./credenciales.json",
-            scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-        });
-        const sheets = google.sheets({ version: "v4", auth });
+    try {  // <-- te faltó este try
+        const sheets = await getGoogleSheetsClient();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
         await sheets.spreadsheets.values.append({
@@ -319,7 +307,7 @@ app.post("/aimediciform", async (req, res) => {
         });
 
         res.status(200).json({ message: "Dati salvati con successo!" });
-    } catch (error) {
+    } catch (error) {  // Ahora sí encaja bien el catch
         console.error("Errore nell'invio dei dati:", error);
         res.status(500).json({ error: "Errore nell'invio dei dati" });
     }
