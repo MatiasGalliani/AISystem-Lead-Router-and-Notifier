@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
 });
 
 // Endpoint para guardar datos en Google Sheets (Manual Leads)
-app.post('/sheets', async (req, res) => {
+app.post('/manual_aiquinto', async (req, res) => {
     try {
         // Autenticación y configuración de Google Sheets
         const sheets = await getGoogleSheetsClient();
@@ -63,7 +63,7 @@ app.post('/sheets', async (req, res) => {
         const textBody =
             `Nuovo Lead di Contatto Manuale
 Ciao,
-È arrivato un nuovo lead manuale con i seguenti dettagli:
+È arrivato un nuovo lead manuale su AIQuinto.it con i seguenti dettagli:
 Nome: ${nome}
 Cognome: ${cognome}
 Email: ${emailField}
