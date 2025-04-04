@@ -30,11 +30,19 @@ app.post('/sheets', async (req, res) => {
         const sheets = google.sheets({ version: 'v4', auth: client });
         const spreadsheetID = process.env.GOOGLE_SHEET_ID;
         const range = "'Manual Leads'!A1:E1"; // Ajusta el rango según la cantidad de columnas
-        const { datos, nome, cognome, email, telefono } = req.body;
+
+        // Suponemos que 'datos' es un array con [nome, cognome, email, telefono, ...otros]
+        const datos = req.body.datos;
 
         if (!Array.isArray(datos)) {
             return res.status(400).json({ error: 'Datos debe ser un array' });
         }
+
+        // Extraer campos desde datos o desde propiedades separadas en req.body
+        const nome = req.body.nome || (datos.length >= 1 ? datos[0] : 'Non specificato');
+        const cognome = req.body.cognome || (datos.length >= 2 ? datos[1] : 'Non specificato');
+        const emailField = req.body.email || (datos.length >= 3 ? datos[2] : 'Non specificato');
+        const telefono = req.body.telefono || (datos.length >= 4 ? datos[3] : 'Non specificato');
 
         // Guardar datos en Google Sheets
         await sheets.spreadsheets.values.append({
@@ -46,7 +54,7 @@ app.post('/sheets', async (req, res) => {
             },
         });
 
-        // Integración de Postmark: Enviar email de confirmación
+        // Integración de Postmark: Enviar email de notificación
         const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
 
         // Preparar el contenido del correo
@@ -54,11 +62,10 @@ app.post('/sheets', async (req, res) => {
             `Nuovo Lead di Contatto Manuale
 Ciao,
 È arrivato un nuovo lead manuale con i seguenti dettagli:
-Nome: ${nome || 'Non specificato'}
-Cognome: ${cognome || 'Non specificato'}
-Email: ${email || 'Non specificato'}
-Telefono: ${telefono || 'Non specificato'}
-Altri dati: ${datos.length > 0 ? datos.join(', ') : 'Nessun dato aggiuntivo'}
+Nome: ${nome}
+Cognome: ${cognome}
+Email: ${emailField}
+Telefono: ${telefono}
 Saluti,
 €ugenio IA`;
 
@@ -84,11 +91,10 @@ Saluti,
       <div class="content">
         <p>Ciao,</p>
         <p>È arrivato un nuovo lead manuale con i seguenti dettagli:</p>
-        <div class="data-item"><span class="label">Nome:</span> ${nome || 'Non specificato'}</div>
-        <div class="data-item"><span class="label">Cognome:</span> ${cognome || 'Non specificato'}</div>
-        <div class="data-item"><span class="label">Email:</span> ${email || 'Non specificato'}</div>
-        <div class="data-item"><span class="label">Telefono:</span> ${telefono || 'Non specificato'}</div>
-        <div class="data-item"><span class="label">Altri dati:</span> ${datos.length > 0 ? datos.join(', ') : 'Nessun dato aggiuntivo'}</div>
+        <div class="data-item"><span class="label">Nome:</span> ${nome}</div>
+        <div class="data-item"><span class="label">Cognome:</span> ${cognome}</div>
+        <div class="data-item"><span class="label">Email:</span> ${emailField}</div>
+        <div class="data-item"><span class="label">Telefono:</span> ${telefono}</div>
       </div>
       <div class="footer">
         <p>Saluti,<br>€ugenio IA</p>
@@ -98,8 +104,8 @@ Saluti,
 </html>`;
 
         const emailData = {
-            "From": "€ugenio IA <it@creditplan.it>", // Asegúrate de que este remitente esté verificado en Postmark
-            "To": "segreteria@creditplan.it",
+            "From": "€ugenio IA <eugenioia@creditplan.it>", // Asegúrate de que este remitente esté verificado en Postmark
+            "To": "it@creditplan.it",
             "Subject": "Nuovo Lead di Contatto Manuale",
             "TextBody": textBody,
             "HtmlBody": htmlBody
