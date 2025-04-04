@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
 });
 
 // Endpoint para guardar datos en Google Sheets (Manual Leads)
-app.post('/manual_aiquinto', async (req, res) => {
+app.post('/manuale_aiquinto', async (req, res) => {
     try {
         // Autenticación y configuración de Google Sheets
         const sheets = await getGoogleSheetsClient();
