@@ -4,68 +4,23 @@ const app = express();
 const cors = require('cors');
 require('dotenv').config();
 
-const nodemailer = require('nodemailer');
-
-// Conversión explícita del puerto a número
-const smtpPort = Number(process.env.SMTP_PORT);
-
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: smtpPort,
-    secure: smtpPort === 465, // true para puerto 465
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
-
-// Verifica la conexión al servidor SMTP
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('Error en la verificación del transporter:', error);
-    } else {
-        console.log('Transporter listo para enviar emails.');
-    }
-});
-
-async function sendEmail(data) {
-    const mailOptions = {
-        from: process.env.SMTP_FROM,               // Remitente configurado en el .env
-        to: process.env.AGENT_EMAIL,               // Email del agente
-        subject: "Nuovo invio dati dal modulo",    // Asunto del correo
-        html: `
-          <p>Ciao,</p>
-          <p>È stato ricevuto un nuovo invio dal modulo con i seguenti dati:</p>
-          <ul>
-            ${data.map(item => `<li>${item}</li>`).join('')}
-          </ul>
-          <p>Cordiali saluti,</p>
-          <p>€ugenio by Creditplan</p>
-        `
-    };
-
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log('Correo enviado correctamente.');
-    } catch (error) {
-        console.error('Error al enviar el correo:', error);
-    }
-}
-
 app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3500;
 
+// Configuración de autenticación con Google Sheets
 const auth = new google.auth.GoogleAuth({
     keyFile: "credenciales.json",
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
+// Endpoint raíz
 app.get('/', (req, res) => {
     res.send('API funcionando correctamente');
 });
 
+// Endpoint para guardar datos en Google Sheets (Manual Leads)
 app.post('/sheets', async (req, res) => {
     try {
         const client = await auth.getClient();
@@ -88,17 +43,14 @@ app.post('/sheets', async (req, res) => {
             },
         });
 
-        // Enviar email al agente
-        await sendEmail(datos);
-
-        res.json({ message: 'Datos guardados y email enviado con éxito' });
+        res.json({ message: 'Datos guardados con éxito' });
     } catch (error) {
-        console.error('Error al guardar en Sheets o enviar email:', error);
-        res.status(500).json({ error: 'Ocurrió un error al guardar los datos o enviar el email' });
+        console.error('Error al guardar en Sheets:', error);
+        res.status(500).json({ error: 'Ocurrió un error al guardar los datos' });
     }
 });
 
-// Rutas adicionales...
+// Endpoint para "pensionato"
 app.post("/pensionato", async (req, res) => {
     const {
         nome,
@@ -154,6 +106,7 @@ app.post("/pensionato", async (req, res) => {
     }
 });
 
+// Endpoint para "dipendente"
 app.post("/dipendente", async (req, res) => {
     const {
         nome,
@@ -211,8 +164,8 @@ app.post("/dipendente", async (req, res) => {
     }
 });
 
+// Endpoint para "aimediciform"
 app.post("/aimediciform", async (req, res) => {
-    // Extraemos los datos enviados desde el formulario
     const {
         financingScope,
         importoRichiesto,
@@ -240,7 +193,7 @@ app.post("/aimediciform", async (req, res) => {
             resource: {
                 values: [
                     [
-                        new Date().toLocaleString("it-IT"), // Fecha y hora
+                        new Date().toLocaleString("it-IT"),
                         nome,
                         cognome,
                         financingScope,
