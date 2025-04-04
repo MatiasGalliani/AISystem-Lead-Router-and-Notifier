@@ -120,11 +120,6 @@ Saluti,
   <body>
     <div class="container">
       <div class="header">
-        <img class="logo" 
-            src="https://i.imgur.com/Wzz0KLR.png"
-            alt="€ugenio IA"
-            style="width: 150px; height: auto;" 
-        />
         <h2>Nuovo Lead di Contatto Manuale</h2>
       </div>
       <div class="content">
