@@ -182,6 +182,7 @@ app.post("/pensionato", async (req, res) => {
         const sheets = await getGoogleSheetsClient();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
+        // Guardar datos en Google Sheets
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
             range: "Pensionati!A1:L1",
@@ -206,10 +207,56 @@ app.post("/pensionato", async (req, res) => {
             }
         });
 
-        res.status(200).json({ message: "Dati salvati con successo!" });
+        // Integración de Postmark: Enviar email de notificación
+        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
+
+        const subject = "Nuovo Lead Pensionato";
+        const textBody =
+            `Nuovo Lead Pensionato\n\n` +
+            `Nome: ${nome}\n` +
+            `Cognome: ${cognome}\n` +
+            `Email: ${mail}\n` +
+            `Telefono: ${telefono}\n` +
+            `Importo Pensione: ${pensionAmount}\n` +
+            `Pensione Netta: ${pensioneNetta}\n` +
+            `Ente Pensionistico: ${entePensionistico}\n` +
+            `Tipo di Pensione: ${pensioneType}\n` +
+            `Data di Nascita: ${birthDate}\n` +
+            `Provincia: ${province}\n` +
+            `Privacy Accettata: ${privacyAccepted ? "SI" : "NO"}\n`;
+
+        const htmlBody = `
+        <html>
+            <body>
+                <h3>Nuovo Lead Pensionato</h3>
+                <p><strong>Nome:</strong> ${nome}</p>
+                <p><strong>Cognome:</strong> ${cognome}</p>
+                <p><strong>Email:</strong> ${mail}</p>
+                <p><strong>Telefono:</strong> ${telefono}</p>
+                <p><strong>Importo Pensione:</strong> ${pensionAmount}</p>
+                <p><strong>Pensione Netta:</strong> ${pensioneNetta}</p>
+                <p><strong>Ente Pensionistico:</strong> ${entePensionistico}</p>
+                <p><strong>Tipo di Pensione:</strong> ${pensioneType}</p>
+                <p><strong>Data di Nascita:</strong> ${birthDate}</p>
+                <p><strong>Provincia:</strong> ${province}</p>
+                <p><strong>Privacy Accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
+            </body>
+        </html>
+        `;
+
+        await postmarkClient.sendEmail({
+            From: "Eugenio IA <eugenioia@creditplan.it>", // Asegurate de que esté verificado en Postmark
+            To: "it@creditplan.it",
+            Subject: subject,
+            TextBody: textBody,
+            HtmlBody: htmlBody,
+            MessageStream: "outbound" // O "transactional" según tu configuración
+        });
+
+        res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
     } catch (error) {
         console.error("Errore nell'invio dei dati:", error);
-        res.status(500).json({ error: "Errore nell'invio dei dati" });
+        res.status(500).json({ error: "Errore nell'invio dei dati o nell'invio della email" });
     }
 });
 
