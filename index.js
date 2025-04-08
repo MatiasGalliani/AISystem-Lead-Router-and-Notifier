@@ -429,25 +429,25 @@ app.post("/aifidi", async (req, res) => {
 
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
-            range: "AIFidi.it!A1:K1",
+            range: "AIFidi!A1",
             valueInputOption: "USER_ENTERED",
             resource: {
                 values: [
                     [
-                        new Date().toLocaleString("it-IT"),
-                        nome,
-                        cognome,
-                        financingScope,
-                        importoRichiesto,
-                        nomeAzienda,
-                        cittaSedeLegale,
-                        cittaSedeOperativa,
-                        mail,
-                        telefono,
-                        privacyAccepted ? "SI" : "NO",
-                    ],
-                ],
-            },
+                        new Date().toLocaleString("it-IT"), // Data
+                        nome,                               // Nome
+                        cognome,                            // Cognome
+                        mail,                               // Mail
+                        telefono,                           // Telefono
+                        financingScope,                     // Scopo del finanziamento
+                        nomeAzienda,                        // Nome Azienda
+                        cittaSedeLegale,                    // Città Sede Legale
+                        cittaSedeOperativa,                 // Città Sede Operativa
+                        importoRichiesto,                   // Importo Richiesto
+                        privacyAccepted ? "SI" : "NO"       // Privacy
+                    ]
+                ]
+            }
         });
 
         res.status(200).json({ message: "Dati salvati con successo!" });
