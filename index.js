@@ -376,7 +376,7 @@ app.post("/aimediciform", async (req, res) => {
         privacyAccepted
     } = req.body;
 
-    try {  // <-- te faltó este try
+    try {
         const sheets = await getGoogleSheetsClient();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
@@ -402,12 +402,57 @@ app.post("/aimediciform", async (req, res) => {
             },
         });
 
-        res.status(200).json({ message: "Dati salvati con successo!" });
-    } catch (error) {  // Ahora sí encaja bien el catch
-        console.error("Errore nell'invio dei dati:", error);
-        res.status(500).json({ error: "Errore nell'invio dei dati" });
+        // 🔔 Enviar email con Postmark
+        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
+
+        const subject = "Nuovo Lead Medico";
+        const textBody = `
+  Nuovo Lead Medico
+  
+  Nome: ${nome}
+  Cognome: ${cognome}
+  Email: ${mail}
+  Telefono: ${telefono}
+  Scopo del finanziamento: ${financingScope}
+  Importo richiesto: ${importoRichiesto}
+  Città di residenza: ${cittaResidenza}
+  Provincia: ${provinciaResidenza}
+  Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
+  `;
+
+        const htmlBody = `
+        <html>
+          <body>
+            <h3>Nuovo Lead Medico</h3>
+            <p><strong>Nome:</strong> ${nome}</p>
+            <p><strong>Cognome:</strong> ${cognome}</p>
+            <p><strong>Email:</strong> ${mail}</p>
+            <p><strong>Telefono:</strong> ${telefono}</p>
+            <p><strong>Scopo del finanziamento:</strong> ${financingScope}</p>
+            <p><strong>Importo richiesto:</strong> ${importoRichiesto}</p>
+            <p><strong>Città di residenza:</strong> ${cittaResidenza}</p>
+            <p><strong>Provincia:</strong> ${provinciaResidenza}</p>
+            <p><strong>Privacy accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
+          </body>
+        </html>
+      `;
+
+        await postmarkClient.sendEmail({
+            From: "Eugenio IA <eugenioia@creditplan.it>",
+            To: "it@creditplan.it",
+            Subject: subject,
+            TextBody: textBody,
+            HtmlBody: htmlBody,
+            MessageStream: "outbound"
+        });
+
+        res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
+    } catch (error) {
+        console.error("Errore nell'invio dei dati o dell'email:", error);
+        res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
     }
 });
+
 
 app.post("/aifidi", async (req, res) => {
     const {
@@ -429,31 +474,77 @@ app.post("/aifidi", async (req, res) => {
 
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
-            range: "AIFidi.it!A1",
+            range: "AIFidi.it!A1:K1",
             valueInputOption: "USER_ENTERED",
             resource: {
                 values: [
                     [
-                        new Date().toLocaleString("it-IT"), // Data
-                        nome,                               // Nome
-                        cognome,                            // Cognome
-                        mail,                               // Mail
-                        telefono,                           // Telefono
-                        financingScope,                     // Scopo del finanziamento
-                        nomeAzienda,                        // Nome Azienda
-                        cittaSedeLegale,                    // Città Sede Legale
-                        cittaSedeOperativa,                 // Città Sede Operativa
-                        importoRichiesto,                   // Importo Richiesto
-                        privacyAccepted ? "SI" : "NO"       // Privacy
-                    ]
-                ]
-            }
+                        new Date().toLocaleString("it-IT"),
+                        nome,
+                        cognome,
+                        mail,
+                        telefono,
+                        financingScope,
+                        nomeAzienda,
+                        cittaSedeLegale,
+                        cittaSedeOperativa,
+                        importoRichiesto,
+                        privacyAccepted ? "SI" : "NO"
+                    ],
+                ],
+            },
         });
 
-        res.status(200).json({ message: "Dati salvati con successo!" });
+        // 🔔 Enviar email con Postmark
+        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
+
+        const subject = "Nuovo Lead AIFidi";
+        const textBody = `
+  Nuovo Lead AIFidi
+  
+  Nome: ${nome}
+  Cognome: ${cognome}
+  Email: ${mail}
+  Telefono: ${telefono}
+  Scopo del finanziamento: ${financingScope}
+  Importo richiesto: ${importoRichiesto}
+  Nome azienda: ${nomeAzienda}
+  Città sede legale: ${cittaSedeLegale}
+  Città sede operativa: ${cittaSedeOperativa}
+  Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
+  `;
+
+        const htmlBody = `
+        <html>
+          <body>
+            <h3>Nuovo Lead AIFidi</h3>
+            <p><strong>Nome:</strong> ${nome}</p>
+            <p><strong>Cognome:</strong> ${cognome}</p>
+            <p><strong>Email:</strong> ${mail}</p>
+            <p><strong>Telefono:</strong> ${telefono}</p>
+            <p><strong>Scopo del finanziamento:</strong> ${financingScope}</p>
+            <p><strong>Importo richiesto:</strong> ${importoRichiesto}</p>
+            <p><strong>Nome azienda:</strong> ${nomeAzienda}</p>
+            <p><strong>Città sede legale:</strong> ${cittaSedeLegale}</p>
+            <p><strong>Città sede operativa:</strong> ${cittaSedeOperativa}</p>
+            <p><strong>Privacy accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
+          </body>
+        </html>
+      `;
+
+        await postmarkClient.sendEmail({
+            From: "Eugenio IA <eugenioia@creditplan.it>",
+            To: "it@creditplan.it",
+            Subject: subject,
+            TextBody: textBody,
+            HtmlBody: htmlBody,
+            MessageStream: "outbound"
+        });
+
+        res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
     } catch (error) {
-        console.error("Errore nell'invio dei dati:", error);
-        res.status(500).json({ error: "Errore nell'invio dei dati" });
+        console.error("Errore nell'invio dei dati o dell'email:", error);
+        res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
     }
 });
 
