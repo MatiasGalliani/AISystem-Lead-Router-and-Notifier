@@ -429,7 +429,7 @@ app.post("/aifidi", async (req, res) => {
 
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
-            range: "AIFidi!A1",
+            range: "AIFidi.it!A1",
             valueInputOption: "USER_ENTERED",
             resource: {
                 values: [
