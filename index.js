@@ -145,7 +145,7 @@ Saluti,
 
         const emailData = {
             "From": "€ugenio IA <eugenioia@creditplan.it>", // Asegúrate de que este remitente esté verificado en Postmark
-            "To": "it@creditplan.it",
+            "To": "andreafriggieri@creditplan.it",
             "Subject": "Nuovo Lead di Contatto Manuale",
             "TextBody": textBody,
             "HtmlBody": htmlBody
@@ -246,7 +246,7 @@ app.post("/pensionato", async (req, res) => {
 
         await postmarkClient.sendEmail({
             From: "Eugenio IA <eugenioia@creditplan.it>", // Asegurate de que esté verificado en Postmark
-            To: "it@creditplan.it",
+            To: "andreafriggieri@creditplan.it",
             Subject: subject,
             TextBody: textBody,
             HtmlBody: htmlBody,
@@ -348,7 +348,7 @@ app.post("/dipendente", async (req, res) => {
 
         await postmarkClient.sendEmail({
             From: "Eugenio IA <eugenioia@creditplan.it>", // Asegurate de que esta dirección esté verificada en Postmark
-            To: "it@creditplan.it",
+            To: "andreafriggieri@creditplan.it",
             Subject: subject,
             TextBody: textBody,
             HtmlBody: htmlBody,
@@ -362,7 +362,6 @@ app.post("/dipendente", async (req, res) => {
     }
 });
 
-// Endpoint para "aimediciform"
 app.post("/aimediciform", async (req, res) => {
     const {
         financingScope,
@@ -439,7 +438,7 @@ app.post("/aimediciform", async (req, res) => {
 
         await postmarkClient.sendEmail({
             From: "Eugenio IA <eugenioia@creditplan.it>",
-            To: "it@creditplan.it",
+            To: "nicofalcinelli@creditplan.it",
             Subject: subject,
             TextBody: textBody,
             HtmlBody: htmlBody,
@@ -534,7 +533,7 @@ app.post("/aifidi", async (req, res) => {
 
         await postmarkClient.sendEmail({
             From: "Eugenio IA <eugenioia@creditplan.it>",
-            To: "it@creditplan.it",
+            To: "thomasiezzi@creditplan.it",
             Subject: subject,
             TextBody: textBody,
             HtmlBody: htmlBody,
