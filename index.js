@@ -28,58 +28,86 @@ app.get('/', (req, res) => {
 app.post('/manuale_aiquinto', async (req, res) => {
     try {
         const sheets = await getGoogleSheetsClient();
-        const spreadsheetID = process.env.GOOGLE_SHEET_ID;
-        const range = "'Manual Leads'!A1:E1";
+
+        // Variables de entorno
+        const masterSheetId = process.env.MASTER_SHEET_ID;
+
+        // Lead general
+        const leadRange = "'Manual Leads'!A1:E1";
         const datos = req.body.datos;
 
-        if (!Array.isArray(datos)) return res.status(400).json({ error: 'Datos debe ser un array' });
+        if (!Array.isArray(datos)) {
+            return res.status(400).json({ error: 'Datos debe ser un array' });
+        }
 
         const nome = req.body.nome || datos[0] || 'Non specificato';
         const cognome = req.body.cognome || datos[1] || 'Non specificato';
         const emailField = req.body.email || datos[2] || 'Non specificato';
         const telefono = req.body.telefono || datos[3] || 'Non specificato';
 
+        // 1️⃣ Guardar en hoja general de leads
         await sheets.spreadsheets.values.append({
-            spreadsheetId: spreadsheetID,
-            range,
+            spreadsheetId: masterSheetId,
+            range: leadRange,
             valueInputOption: 'RAW',
-            requestBody: { values: [datos] },
+            requestBody: {
+                values: [datos],
+            },
         });
 
+        // 2️⃣ Asignar un agente (round robin)
         const agente = await assegnaAgenteRoundRobin();
 
-        const textBody = `Nuovo Lead per te\nNome: ${nome}\nCognome: ${cognome}\nEmail: ${emailField}\nTelefono: ${telefono}`;
-        const htmlBody = `
-        <html><body>
-        <h3>Nuovo Lead</h3>
-        <p><strong>Nome:</strong> ${nome}</p>
-        <p><strong>Cognome:</strong> ${cognome}</p>
-        <p><strong>Email:</strong> ${emailField}</p>
-        <p><strong>Telefono:</strong> ${telefono}</p>
-        </body></html>`;
+        // 3️⃣ Guardar en hoja personal del agente
+        const agenteSheetId = agente.sheetId;
+        const agenteRange = "Leads!A1:G1"; // Asegúrate que exista esta hoja en su archivo
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: agenteSheetId,
+            range: agenteRange,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: {
+                values: [
+                    [
+                        new Date().toLocaleString("it-IT"),
+                        nome,
+                        cognome,
+                        emailField,
+                        telefono,
+                        "Manuale",
+                        "In attesa di contatto"
+                    ]
+                ]
+            }
+        });
 
+        // 4️⃣ Email al agente
         await resend.emails.send({
             from: "Eugenio IA <eugenioia@resend.dev>",
             to: agente.email,
             subject: "Nuovo Lead Assegnato",
-            text: textBody,
-            html: htmlBody,
+            text: `Nuovo Lead per te\nNome: ${nome}\nCognome: ${cognome}\nEmail: ${emailField}\nTelefono: ${telefono}`,
+            html: `
+                <html><body>
+                <h3>Nuovo Lead</h3>
+                <p><strong>Nome:</strong> ${nome}</p>
+                <p><strong>Cognome:</strong> ${cognome}</p>
+                <p><strong>Email:</strong> ${emailField}</p>
+                <p><strong>Telefono:</strong> ${telefono}</p>
+                </body></html>`
         });
 
-        const clientText = `Grazie per averci contattato! Il tuo consulente è ${agente.nome}. Puoi prenotare una videochiamata qui: ${agente.calendly}`;
-        const clientHtml = `
-        <html><body>
-        <h3>Grazie per averci contattato!</h3>
-        <p>Il tuo consulente è <strong>${agente.nome}</strong>.</p>
-        <p>Puoi prenotare una videochiamata cliccando qui: <a href="${agente.calendly}">${agente.calendly}</a></p>
-        </body></html>`;
-
+        // 5️⃣ Email al cliente
         await resend.emails.send({
             from: "Eugenio IA <eugenioia@resend.dev>",
             to: emailField,
             subject: "Grazie per la tua richiesta",
-            text: clientText,
-            html: clientHtml,
+            text: `Grazie per averci contattato! Il tuo consulente è ${agente.nome}. Prenota una videochiamata qui: ${agente.calendly}`,
+            html: `
+                <html><body>
+                <h3>Grazie per averci contattato!</h3>
+                <p>Il tuo consulente è <strong>${agente.nome}</strong>.</p>
+                <p>Puoi prenotare una videochiamata cliccando qui: <a href="${agente.calendly}">${agente.calendly}</a></p>
+                </body></html>`
         });
 
         res.json({ message: 'Lead salvato e email inviate con successo' });
