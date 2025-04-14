@@ -82,13 +82,11 @@ app.post('/manuale_aiquinto', async (req, res) => {
             return res.status(500).json({ error: 'Configuración de hoja privada faltante para el agente' });
         }
 
-        // Definir el rango donde se guardarán los datos
-        // Asumimos que cada hoja tiene una pestaña llamada "Leads"
-        const range = "Leads!A1:E1"; // Puedes ajustar el rango según sea necesario
+        // Definir el rango donde se guardarán los datos en la hoja privada
+        const range = "Leads!A1:E1"; // Ajusta el rango según la estructura de la hoja
 
         // Suponemos que 'datos' es un array con [nome, cognome, email, telefono, ...otros]
         const datos = req.body.datos;
-
         if (!Array.isArray(datos)) {
             console.error("Error: 'datos' no es un array.");
             return res.status(400).json({ error: 'Datos debe ser un array' });
@@ -106,17 +104,15 @@ app.post('/manuale_aiquinto', async (req, res) => {
             spreadsheetId: agentSheetId,
             range,
             valueInputOption: 'RAW',
-            requestBody: {
-                values: [datos],
-            },
+            requestBody: { values: [datos] },
         });
-        console.log("Datos guardados correctamente en el Google Sheet del agente.");
+        console.log("Datos guardados correctamente en la hoja del agente.");
 
-        // Preparar el contenido del correo
-        const textBody =
+        // Preparar el contenido del correo para el agente (sin cambios)
+        const textBodyAgent =
             `Nuovo Lead di Contatto Manuale
 Ciao,
-È arrivato un nuovo lead manuale su AIQuinto.it con i seguenti dettagli:
+È arrivato un nuovo lead manuale su AIQuinto.it con i seguenti detalles:
 Nome: ${nome}
 Cognome: ${cognome}
 Email: ${emailField}
@@ -124,7 +120,7 @@ Telefono: ${telefono}
 Saluti,
 €ugenio IA`;
 
-        const htmlBody = `
+        const htmlBodyAgent = `
 <html>
   <head>
     <meta charset="UTF-8">
@@ -146,7 +142,7 @@ Saluti,
       </div>
       <div class="content">
         <p>Ciao,</p>
-        <p>È arrivato un nuovo lead manuale con i seguenti dettagli:</p>
+        <p>È arrivato un nuovo lead manuale con i seguenti detalles:</p>
         <div class="data-item"><span class="label">Nome:</span> ${nome}</div>
         <div class="data-item"><span class="label">Cognome:</span> ${cognome}</div>
         <div class="data-item"><span class="label">Email:</span> ${emailField}</div>
@@ -154,28 +150,84 @@ Saluti,
       </div>
       <div class="footer">
         <p>Saluti</p>
-        <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px; height: auto;" />
+        <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px;" />
       </div>
     </div>
   </body>
 </html>`;
 
-        const emailData = {
-            from: "€ugenio IA <eugenioia@resend.dev>", // recuerda que en entorno de pruebas solo se pueden enviar a la dirección verificada
+        const emailDataAgent = {
+            from: "€ugenio IA <eugenioia@resend.dev>",
             to: recipient,
             subject: "Nuovo Lead di Contatto Manuale",
-            text: textBody,
-            html: htmlBody
+            text: textBodyAgent,
+            html: htmlBodyAgent
         };
 
-        console.log("Enviando correo...");
-        await resend.emails.send(emailData);
-        console.log("Correo enviado con éxito a:", recipient);
+        console.log("Enviando correo al agente...");
+        await resend.emails.send(emailDataAgent);
+        console.log("Correo enviado con éxito al agente:", recipient);
 
-        // Responder al cliente
-        res.json({ message: 'Datos guardados y email enviado con éxito' });
+        // Preparar el contenido del correo para el cliente utilizando la información del agente
+        const agentInfo = agentInfoMapping[recipient];
+        if (!agentInfo) {
+            console.error(`No se encontró información para el agente ${recipient}`);
+        }
+        const textBodyClient =
+            `Hola,
+Gracias por enviar tu información. Tu agente asignado es ${agentInfo ? agentInfo.name : 'nuestro agente'}.
+${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}
+Si lo deseas, también puedes agendar una llamada: ${agentInfo && agentInfo.calendly ? agentInfo.calendly : ""}
+Saludos,
+AIQuinto`;
+
+        const htmlBodyClient = `
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <style>
+      body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; }
+      .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; }
+      .header { background-color: #007bff; color: #ffffff; padding: 20px; text-align: center; }
+      .content { padding: 20px; }
+      .button { display: inline-block; padding: 10px 20px; margin-top: 20px; background-color: #28a745; color: #ffffff; text-decoration: none; border-radius: 5px; }
+      .footer { text-align: center; padding: 10px; font-size: 12px; color: #888888; background-color: #f7f7f7; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>¡Gracias por contactarnos!</h2>
+      </div>
+      <div class="content">
+        <p>Tu agente asignado es <strong>${agentInfo ? agentInfo.name : 'nuestro agente'}</strong>.</p>
+        <p>${agentInfo ? "Teléfono: " + agentInfo.phone : ""}</p>
+        <p>Si deseas que te llamemos o agendar una llamada, haz clic en el siguiente botón:</p>
+        <p><a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" class="button">Agendar llamada</a></p>
+        <p>Estaremos en contacto para ayudarte.</p>
+      </div>
+      <div class="footer">
+        <p>Saludos,<br>El equipo de AIQuinto</p>
+      </div>
+    </div>
+  </body>
+</html>`;
+
+        const emailDataClient = {
+            from: "AIQuinto <eugenioia@resend.dev>", // Usa un remitente verificado en producción
+            to: emailField,  // Correo del cliente
+            subject: "Conoce a tu agente asignado en AIQuinto",
+            text: textBodyClient,
+            html: htmlBodyClient
+        };
+
+        console.log("Enviando correo al cliente...");
+        await resend.emails.send(emailDataClient);
+        console.log("Correo enviado con éxito al cliente:", emailField);
+
+        res.json({ message: 'Datos guardados y correos enviados con éxito' });
     } catch (error) {
-        console.error('Error al guardar en Sheets o enviar email:', error);
+        console.error('Error al procesar la solicitud:', error);
         res.status(500).json({ error: 'Ocurrió un error al procesar la solicitud' });
     }
 });
