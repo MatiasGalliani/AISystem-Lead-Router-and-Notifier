@@ -108,7 +108,7 @@ Saluti,
 
         const emailData = {
             from: "€ugenio IA <eugenioia@resend.dev>", // Usamos la dirección temporal hasta recuperar el dominio
-            to: "andreafriggieri@creditplan.it",
+            to: "it@creditplan.it",
             subject: "Nuovo Lead di Contatto Manuale",
             text: textBody,
             html: htmlBody
