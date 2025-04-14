@@ -306,7 +306,7 @@ app.post("/pensionato", async (req, res) => {
             resource: {
                 values: [
                     [
-                        new Date().toLocaleString("it-IT"),
+                        new Date().toLocaleString("it-IT"), // Fecha y hora en la primera celda
                         nome,
                         cognome,
                         mail,
