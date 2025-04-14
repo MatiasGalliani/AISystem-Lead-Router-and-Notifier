@@ -198,35 +198,61 @@ Saludos,
 AIQuinto`;
 
         const htmlBodyClient = `
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <style>
-      body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; }
-      .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; }
-      .header { background-color: #007bff; color: #ffffff; padding: 20px; text-align: center; }
-      .content { padding: 20px; }
-      .button { display: inline-block; padding: 10px 20px; margin-top: 20px; background-color: #28a745; color: #ffffff; text-decoration: none; border-radius: 5px; }
-      .footer { text-align: center; padding: 10px; font-size: 12px; color: #888888; background-color: #f7f7f7; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h2>¡Gracias por contactarnos!</h2>
-      </div>
-      <div class="content">
-        <p>Tu agente asignado es <strong>${agentInfo ? agentInfo.name : 'nuestro agente'}</strong>.</p>
-        <p>${agentInfo ? "Teléfono: " + agentInfo.phone : ""}</p>
-        <p>Si deseas que te llamemos o agendar una llamada, haz clic en el siguiente botón:</p>
-        <p><a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" class="button">Agendar llamada</a></p>
-        <p>Estaremos en contacto para ayudarte.</p>
-      </div>
-      <div class="footer">
-        <p>Saludos,<br>El equipo de AIQuinto</p>
-      </div>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conosci il tuo agente in Creditplan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-50">
+  <div class="max-w-lg mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+    <!-- Header (puede contener tu logotipo o una imagen de encabezado) -->
+    <div>
+      <img src="mail_header.svg" alt="Intestazione della Mail" class="w-full">
     </div>
-  </body>
+    <!-- Título -->
+    <div class="text-center py-4">
+      <span class="text-4xl font-bold text-blue-800">Grazie!</span>
+    </div>
+    <!-- Contenido Principal -->
+    <div class="p-6 text-gray-700">
+      <!-- Mensaje introductorio -->
+      <p class="mb-4">Ciao <strong>${clientName},</strong></p>
+      <p class="mb-4">
+        <strong>Prima di tutto,</strong> ti ringraziamo per aver scelto Creditplan per le tue esigenze finanziarie. Siamo lieti di poterti supportare e ci impegniamo a fornirti l’assistenza più adeguata e personalizzata.
+      </p>
+      <p class="mb-4">
+        Il nostro sistema ha processato la tua richiesta e, in base alla nostra organizzazione, <strong>ti è stato assegnato un agente dedicato</strong> che si occuperà di fornirti tutte le informazioni necessarie e guidarti nel percorso.
+      </p>
+      <!-- Información del agente -->
+      <p class="mb-4">
+        Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro agente'}</strong>.
+      </p>
+      <p class="mb-4">
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure, se preferisci, fissare una chiamata utilizzando il link che trovi qui sotto.
+      </p>
+      <div class="text-center">
+        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" class="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded-xl shadow">
+          Fissa una chiamata
+        </a>
+      </div>
+      <p class="mt-6">
+        Siamo certi che il nostro team saprà offrirti la migliore consulenza e supporto. Rimaniamo a tua completa disposizione per qualsiasi ulteriore informazione.
+      </p>
+      <p class="mt-2">
+        Cordiali saluti,<br>
+        Il team di Creditplan
+      </p>
+    </div>
+    <!-- Pie de Página -->
+    <div class="bg-blue-50 p-4 text-center text-sm text-gray-500 border-t">
+      &copy; 2025 Creditplan Società di Mediazione Creditizia. Tutti i diritti riservati.<br>
+      Via Giacomo Tosi 3, Monza, MB (20900)
+    </div>
+  </div>
+</body>
 </html>`;
 
         const emailDataClient = {
