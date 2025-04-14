@@ -1,3 +1,30 @@
+const express = require('express');
+const { google } = require('googleapis');
+const { Resend } = require("resend");
+const cors = require('cors');
+require('dotenv').config();
+const { assegnaAgenteRoundRobin } = require('./agenti');
+
+const app = express();
+const resend = new Resend(process.env.RESEND_API_KEY);
+const PORT = process.env.PORT || 3500;
+
+app.use(cors());
+app.use(express.json());
+
+async function getGoogleSheetsClient() {
+    const auth = new google.auth.GoogleAuth({
+        keyFile: "./credenciales.json",
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+    const authClient = await auth.getClient();
+    return google.sheets({ version: "v4", auth: authClient });
+}
+
+app.get('/', (req, res) => {
+    res.send('API funcionando correctamente');
+});
+
 app.post('/manuale_aiquinto', async (req, res) => {
     try {
         const sheets = await getGoogleSheetsClient();
@@ -71,4 +98,8 @@ app.post('/manuale_aiquinto', async (req, res) => {
         console.error('❌ Error:', error);
         res.status(500).json({ error: 'Error al procesar el lead' });
     }
+});
+
+app.listen(PORT, () => {
+    console.log('Servidor corriendo en el puerto', PORT);
 });
