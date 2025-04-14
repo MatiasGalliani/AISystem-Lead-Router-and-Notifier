@@ -1,15 +1,17 @@
 const express = require('express');
 const { google } = require('googleapis');
+const { Resend } = require("resend");
 const app = express();
 const cors = require('cors');
-const postmark = require("postmark");
-
 require('dotenv').config();
 
 app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3500;
+
+// Inicializar Resend con la API Key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function getGoogleSheetsClient() {
     const auth = new google.auth.GoogleAuth({
@@ -56,9 +58,6 @@ app.post('/manuale_aiquinto', async (req, res) => {
             },
         });
 
-        // Integración de Postmark: Enviar email de notificación
-        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
-
         // Preparar el contenido del correo
         const textBody =
             `Nuovo Lead di Contatto Manuale
@@ -76,47 +75,14 @@ Saluti,
   <head>
     <meta charset="UTF-8">
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
-        color: #333;
-        margin: 0;
-        padding: 0;
-      }
-      .container {
-        max-width: 600px;
-        margin: 20px auto;
-        background: #fff;
-        padding: 20px;
-        border-radius: 8px;
-      }
-      .header {
-        background-color: #007bff;
-        color: #fff;
-        padding: 20px;
-        text-align: center;
-        border-radius: 6px 6px 0 0;
-      }
-      .logo {
-        max-width: 150px;
-        height: auto;
-        margin-bottom: 10px;
-      }
-      .content {
-        padding: 20px;
-      }
-      .data-item {
-        margin-bottom: 10px;
-      }
-      .label {
-        font-weight: bold;
-      }
-      .footer {
-        margin-top: 20px;
-        font-size: 12px;
-        text-align: center;
-        color: #777;
-      }
+      body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 0; }
+      .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+      .header { background-color: #007bff; color: #fff; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+      .logo { max-width: 150px; height: auto; margin-bottom: 10px; }
+      .content { padding: 20px; }
+      .data-item { margin-bottom: 10px; }
+      .label { font-weight: bold; }
+      .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #777; }
     </style>
   </head>
   <body>
@@ -134,25 +100,22 @@ Saluti,
       </div>
       <div class="footer">
         <p>Saluti</p>
-        <img class="logo" 
-            src="https://i.imgur.com/Wzz0KLR.png"
-            alt="€ugenio IA"
-            style="width: 150px; height: auto;" 
-        />
+        <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px; height: auto;" />
+      </div>
     </div>
   </body>
 </html>`;
 
         const emailData = {
-            "From": "€ugenio IA <eugenioia@creditplan.it>", // Asegúrate de que este remitente esté verificado en Postmark
-            "To": "andreafriggieri@creditplan.it",
-            "Subject": "Nuovo Lead di Contatto Manuale",
-            "TextBody": textBody,
-            "HtmlBody": htmlBody
+            from: "€ugenio IA <eugenioia@resend.dev>", // Usamos la dirección temporal hasta recuperar el dominio
+            to: "andreafriggieri@creditplan.it",
+            subject: "Nuovo Lead di Contatto Manuale",
+            text: textBody,
+            html: htmlBody
         };
 
-        // Enviar el email
-        await postmarkClient.sendEmail(emailData);
+        // Enviar el correo usando Resend
+        await resend.emails.send(emailData);
 
         // Responder al cliente
         res.json({ message: 'Datos guardados y email enviado con éxito' });
@@ -207,9 +170,7 @@ app.post("/pensionato", async (req, res) => {
             }
         });
 
-        // Integración de Postmark: Enviar email de notificación
-        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
-
+        // Preparar email de notificación
         const subject = "Nuovo Lead Pensionato";
         const textBody =
             `Nuovo Lead Pensionato\n\n` +
@@ -226,32 +187,32 @@ app.post("/pensionato", async (req, res) => {
             `Privacy Accettata: ${privacyAccepted ? "SI" : "NO"}\n`;
 
         const htmlBody = `
-        <html>
-            <body>
-                <h3>Nuovo Lead Pensionato</h3>
-                <p><strong>Nome:</strong> ${nome}</p>
-                <p><strong>Cognome:</strong> ${cognome}</p>
-                <p><strong>Email:</strong> ${mail}</p>
-                <p><strong>Telefono:</strong> ${telefono}</p>
-                <p><strong>Importo Pensione:</strong> ${pensionAmount}</p>
-                <p><strong>Pensione Netta:</strong> ${pensioneNetta}</p>
-                <p><strong>Ente Pensionistico:</strong> ${entePensionistico}</p>
-                <p><strong>Tipo di Pensione:</strong> ${pensioneType}</p>
-                <p><strong>Data di Nascita:</strong> ${birthDate}</p>
-                <p><strong>Provincia:</strong> ${province}</p>
-                <p><strong>Privacy Accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
-            </body>
-        </html>
-        `;
+<html>
+    <body>
+        <h3>Nuovo Lead Pensionato</h3>
+        <p><strong>Nome:</strong> ${nome}</p>
+        <p><strong>Cognome:</strong> ${cognome}</p>
+        <p><strong>Email:</strong> ${mail}</p>
+        <p><strong>Telefono:</strong> ${telefono}</p>
+        <p><strong>Importo Pensione:</strong> ${pensionAmount}</p>
+        <p><strong>Pensione Netta:</strong> ${pensioneNetta}</p>
+        <p><strong>Ente Pensionistico:</strong> ${entePensionistico}</p>
+        <p><strong>Tipo di Pensione:</strong> ${pensioneType}</p>
+        <p><strong>Data di Nascita:</strong> ${birthDate}</p>
+        <p><strong>Provincia:</strong> ${province}</p>
+        <p><strong>Privacy Accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
+    </body>
+</html>`;
 
-        await postmarkClient.sendEmail({
-            From: "Eugenio IA <eugenioia@creditplan.it>", // Asegurate de que esté verificado en Postmark
-            To: "andreafriggieri@creditplan.it",
-            Subject: subject,
-            TextBody: textBody,
-            HtmlBody: htmlBody,
-            MessageStream: "outbound" // O "transactional" según tu configuración
-        });
+        const emailData = {
+            from: "€ugenio IA <eugenioia@resend.dev>",
+            to: "andreafriggieri@creditplan.it",
+            subject,
+            text: textBody,
+            html: htmlBody
+        };
+
+        await resend.emails.send(emailData);
 
         res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
     } catch (error) {
@@ -307,9 +268,7 @@ app.post("/dipendente", async (req, res) => {
             }
         });
 
-        // Integración de Postmark: Enviar email de notificación
-        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
-
+        // Preparar email de notificación para lead dipendente
         const subject = "Nuovo Lead Dipendente";
         const textBody =
             `Nuovo Lead Dipendente\n\n` +
@@ -327,33 +286,33 @@ app.post("/dipendente", async (req, res) => {
             `Privacy Accettata: ${privacyAccepted ? "SI" : "NO"}\n`;
 
         const htmlBody = `
-        <html>
-            <body>
-                <h3>Nuovo Lead Dipendente</h3>
-                <p><strong>Nome:</strong> ${nome}</p>
-                <p><strong>Cognome:</strong> ${cognome}</p>
-                <p><strong>Email:</strong> ${mail}</p>
-                <p><strong>Telefono:</strong> ${telefono}</p>
-                <p><strong>Importo Richiesto:</strong> ${amountRequested}</p>
-                <p><strong>Salario Netto:</strong> ${netSalary}</p>
-                <p><strong>Tipo di Dipendente:</strong> ${depType}</p>
-                <p><strong>Selezione Secondaria:</strong> ${depType === "Privato" ? secondarySelection : "N/A"}</p>
-                <p><strong>Tipo di Contratto:</strong> ${contractType}</p>
-                <p><strong>Data di Nascita:</strong> ${birthDate}</p>
-                <p><strong>Provincia:</strong> ${province}</p>
-                <p><strong>Privacy Accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
-            </body>
-        </html>
-        `;
+<html>
+    <body>
+        <h3>Nuovo Lead Dipendente</h3>
+        <p><strong>Nome:</strong> ${nome}</p>
+        <p><strong>Cognome:</strong> ${cognome}</p>
+        <p><strong>Email:</strong> ${mail}</p>
+        <p><strong>Telefono:</strong> ${telefono}</p>
+        <p><strong>Importo Richiesto:</strong> ${amountRequested}</p>
+        <p><strong>Salario Netto:</strong> ${netSalary}</p>
+        <p><strong>Tipo di Dipendente:</strong> ${depType}</p>
+        <p><strong>Selezione Secondaria:</strong> ${depType === "Privato" ? secondarySelection : "N/A"}</p>
+        <p><strong>Tipo di Contratto:</strong> ${contractType}</p>
+        <p><strong>Data di Nascita:</strong> ${birthDate}</p>
+        <p><strong>Provincia:</strong> ${province}</p>
+        <p><strong>Privacy Accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
+    </body>
+</html>`;
 
-        await postmarkClient.sendEmail({
-            From: "Eugenio IA <eugenioia@creditplan.it>", // Asegurate de que esta dirección esté verificada en Postmark
-            To: "andreafriggieri@creditplan.it",
-            Subject: subject,
-            TextBody: textBody,
-            HtmlBody: htmlBody,
-            MessageStream: "outbound" // O "transactional" según tu configuración en Postmark
-        });
+        const emailData = {
+            from: "€ugenio IA <eugenioia@resend.dev>",
+            to: "andreafriggieri@creditplan.it",
+            subject,
+            text: textBody,
+            html: htmlBody
+        };
+
+        await resend.emails.send(emailData);
 
         res.status(200).json({ message: "Dati dipendente salvati e email inviata con successo!" });
     } catch (error) {
@@ -362,6 +321,7 @@ app.post("/dipendente", async (req, res) => {
     }
 });
 
+// Endpoint para "aimediciform"
 app.post("/aimediciform", async (req, res) => {
     const {
         financingScope,
@@ -401,49 +361,46 @@ app.post("/aimediciform", async (req, res) => {
             },
         });
 
-        // 🔔 Enviar email con Postmark
-        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
-
+        // Preparar email de notificación para lead medico
         const subject = "Nuovo Lead Medico";
         const textBody = `
-  Nuovo Lead Medico
-  
-  Nome: ${nome}
-  Cognome: ${cognome}
-  Email: ${mail}
-  Telefono: ${telefono}
-  Scopo del finanziamento: ${financingScope}
-  Importo richiesto: ${importoRichiesto}
-  Città di residenza: ${cittaResidenza}
-  Provincia: ${provinciaResidenza}
-  Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
-  `;
+Nuovo Lead Medico
 
+Nome: ${nome}
+Cognome: ${cognome}
+Email: ${mail}
+Telefono: ${telefono}
+Scopo del finanziamento: ${financingScope}
+Importo richiesto: ${importoRichiesto}
+Città di residenza: ${cittaResidenza}
+Provincia: ${provinciaResidenza}
+Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
+`;
         const htmlBody = `
-        <html>
-          <body>
-            <h3>Nuovo Lead Medico</h3>
-            <p><strong>Nome:</strong> ${nome}</p>
-            <p><strong>Cognome:</strong> ${cognome}</p>
-            <p><strong>Email:</strong> ${mail}</p>
-            <p><strong>Telefono:</strong> ${telefono}</p>
-            <p><strong>Scopo del finanziamento:</strong> ${financingScope}</p>
-            <p><strong>Importo richiesto:</strong> ${importoRichiesto}</p>
-            <p><strong>Città di residenza:</strong> ${cittaResidenza}</p>
-            <p><strong>Provincia:</strong> ${provinciaResidenza}</p>
-            <p><strong>Privacy accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
-          </body>
-        </html>
-      `;
+<html>
+  <body>
+    <h3>Nuovo Lead Medico</h3>
+    <p><strong>Nome:</strong> ${nome}</p>
+    <p><strong>Cognome:</strong> ${cognome}</p>
+    <p><strong>Email:</strong> ${mail}</p>
+    <p><strong>Telefono:</strong> ${telefono}</p>
+    <p><strong>Scopo del finanziamento:</strong> ${financingScope}</p>
+    <p><strong>Importo richiesto:</strong> ${importoRichiesto}</p>
+    <p><strong>Città di residenza:</strong> ${cittaResidenza}</p>
+    <p><strong>Provincia:</strong> ${provinciaResidenza}</p>
+    <p><strong>Privacy accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
+  </body>
+</html>
+`;
+        const emailData = {
+            from: "€ugenio IA <eugenioia@resend.dev>",
+            to: "nicofalcinelli@creditplan.it",
+            subject,
+            text: textBody,
+            html: htmlBody
+        };
 
-        await postmarkClient.sendEmail({
-            From: "Eugenio IA <eugenioia@creditplan.it>",
-            To: "nicofalcinelli@creditplan.it",
-            Subject: subject,
-            TextBody: textBody,
-            HtmlBody: htmlBody,
-            MessageStream: "outbound"
-        });
+        await resend.emails.send(emailData);
 
         res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
     } catch (error) {
@@ -452,7 +409,7 @@ app.post("/aimediciform", async (req, res) => {
     }
 });
 
-
+// Endpoint para "aifidi"
 app.post("/aifidi", async (req, res) => {
     const {
         nome,
@@ -494,51 +451,48 @@ app.post("/aifidi", async (req, res) => {
             },
         });
 
-        // 🔔 Enviar email con Postmark
-        const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
-
+        // Preparar email de notificación para lead AIFidi
         const subject = "Nuovo Lead AIFidi";
         const textBody = `
-  Nuovo Lead AIFidi
-  
-  Nome: ${nome}
-  Cognome: ${cognome}
-  Email: ${mail}
-  Telefono: ${telefono}
-  Scopo del finanziamento: ${financingScope}
-  Importo richiesto: ${importoRichiesto}
-  Nome azienda: ${nomeAzienda}
-  Città sede legale: ${cittaSedeLegale}
-  Città sede operativa: ${cittaSedeOperativa}
-  Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
-  `;
+Nuovo Lead AIFidi
 
+Nome: ${nome}
+Cognome: ${cognome}
+Email: ${mail}
+Telefono: ${telefono}
+Scopo del finanziamento: ${financingScope}
+Importo richiesto: ${importoRichiesto}
+Nome azienda: ${nomeAzienda}
+Città sede legale: ${cittaSedeLegale}
+Città sede operativa: ${cittaSedeOperativa}
+Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
+`;
         const htmlBody = `
-        <html>
-          <body>
-            <h3>Nuovo Lead AIFidi</h3>
-            <p><strong>Nome:</strong> ${nome}</p>
-            <p><strong>Cognome:</strong> ${cognome}</p>
-            <p><strong>Email:</strong> ${mail}</p>
-            <p><strong>Telefono:</strong> ${telefono}</p>
-            <p><strong>Scopo del finanziamento:</strong> ${financingScope}</p>
-            <p><strong>Importo richiesto:</strong> ${importoRichiesto}</p>
-            <p><strong>Nome azienda:</strong> ${nomeAzienda}</p>
-            <p><strong>Città sede legale:</strong> ${cittaSedeLegale}</p>
-            <p><strong>Città sede operativa:</strong> ${cittaSedeOperativa}</p>
-            <p><strong>Privacy accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
-          </body>
-        </html>
-      `;
+<html>
+  <body>
+    <h3>Nuovo Lead AIFidi</h3>
+    <p><strong>Nome:</strong> ${nome}</p>
+    <p><strong>Cognome:</strong> ${cognome}</p>
+    <p><strong>Email:</strong> ${mail}</p>
+    <p><strong>Telefono:</strong> ${telefono}</p>
+    <p><strong>Scopo del finanziamento:</strong> ${financingScope}</p>
+    <p><strong>Importo richiesto:</strong> ${importoRichiesto}</p>
+    <p><strong>Nome azienda:</strong> ${nomeAzienda}</p>
+    <p><strong>Città sede legale:</strong> ${cittaSedeLegale}</p>
+    <p><strong>Città sede operativa:</strong> ${cittaSedeOperativa}</p>
+    <p><strong>Privacy accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
+  </body>
+</html>
+`;
+        const emailData = {
+            from: "€ugenio IA <eugenioia@resend.dev>",
+            to: "thomasiezzi@creditplan.it",
+            subject,
+            text: textBody,
+            html: htmlBody
+        };
 
-        await postmarkClient.sendEmail({
-            From: "Eugenio IA <eugenioia@creditplan.it>",
-            To: "thomasiezzi@creditplan.it",
-            Subject: subject,
-            TextBody: textBody,
-            HtmlBody: htmlBody,
-            MessageStream: "outbound"
-        });
+        await resend.emails.send(emailData);
 
         res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
     } catch (error) {
