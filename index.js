@@ -113,7 +113,7 @@ app.post('/manuale_aiquinto', async (req, res) => {
         const cognome = req.body.cognome || (datos.length >= 2 ? datos[1] : 'Non specificato');
         const emailField = req.body.email || (datos.length >= 3 ? datos[2] : 'Non specificato');
         const telefono = req.body.telefono || (datos.length >= 4 ? datos[3] : 'Non specificato');
-        const clientName = req.body.nombre || 'Cliente';
+        const clientName = `${req.body.nome || ''} ${req.body.cognome || ''}`.trim() || 'Cliente';
 
         // Guardar datos en el Google Sheet privado del agente
         console.log(`Guardando datos en la hoja del agente ${recipient} (Sheet ID: ${agentSheetId})...`);
@@ -205,56 +205,57 @@ AIQuinto`;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conosci il tuo agente in Creditplan</title>
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-blue-50">
-  <div class="max-w-lg mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-    <!-- Header (puede contener tu logotipo o una imagen de encabezado) -->
+<body style="background-color: #eff6ff; margin: 0; padding: 0;">
+  <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+    <!-- Header: imagen con URL absoluto -->
     <div>
-      <img src="mail_header.svg" alt="Intestazione della Mail" class="w-full">
+      <img src="https://i.imgur.com/DbNTDpS.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
     </div>
     <!-- Título -->
-    <div class="text-center py-4">
-      <span class="text-4xl font-bold text-blue-800">Grazie!</span>
+    <div style="text-align: center; padding: 1rem 0;">
+      <span style="font-size: 2.25rem; font-weight: bold; color: #1e3a8a;">Grazie!</span>
     </div>
     <!-- Contenido Principal -->
-    <div class="p-6 text-gray-700">
+    <div style="padding: 1.5rem; color: #4a5568;">
       <!-- Mensaje introductorio -->
-      <p class="mb-4">Ciao <strong>${clientName},</strong></p>
-      <p class="mb-4">
+      <p style="margin-bottom: 1rem;">Ciao <strong>${clientName},</strong></p>
+      <p style="margin-bottom: 1rem;">
         <strong>Prima di tutto,</strong> ti ringraziamo per aver scelto Creditplan per le tue esigenze finanziarie. Siamo lieti di poterti supportare e ci impegniamo a fornirti l’assistenza più adeguata e personalizzata.
       </p>
-      <p class="mb-4">
+      <p style="margin-bottom: 1rem;">
         Il nostro sistema ha processato la tua richiesta e, in base alla nostra organizzazione, <strong>ti è stato assegnato un agente dedicato</strong> che si occuperà di fornirti tutte le informazioni necessarie e guidarti nel percorso.
       </p>
       <!-- Información del agente -->
-      <p class="mb-4">
+      <p style="margin-bottom: 1rem;">
         Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro agente'}</strong>.
       </p>
-      <p class="mb-4">
-        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure, se preferisci, fissare una chiamata utilizzando il link che trovi qui sotto.
+      <p style="margin-bottom: 1rem;">
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure, se preferisci, fissare una chiamata utilizzando il link qui sotto.
       </p>
-      <div class="text-center">
-        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" class="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded-xl shadow">
+      <div style="text-align: center;">
+        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" 
+           style="display: inline-block; padding: 0.5rem 1.5rem; background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           Fissa una chiamata
         </a>
       </div>
-      <p class="mt-6">
+      <p style="margin-top: 1.5rem;">
         Siamo certi che il nostro team saprà offrirti la migliore consulenza e supporto. Rimaniamo a tua completa disposizione per qualsiasi ulteriore informazione.
       </p>
-      <p class="mt-2">
+      <p style="margin-top: 0.5rem;">
         Cordiali saluti,<br>
         Il team di Creditplan
       </p>
     </div>
     <!-- Pie de Página -->
-    <div class="bg-blue-50 p-4 text-center text-sm text-gray-500 border-t">
+    <div style="background-color: #eff6ff; padding: 1rem; text-align: center; font-size: 0.875rem; color: #718096; border-top: 1px solid #e2e8f0;">
       &copy; 2025 Creditplan Società di Mediazione Creditizia. Tutti i diritti riservati.<br>
       Via Giacomo Tosi 3, Monza, MB (20900)
     </div>
   </div>
 </body>
-</html>`;
+</html>
+`;
 
         const emailDataClient = {
             from: "AIQuinto <eugenioia@resend.dev>", // Usa un remitente verificado en producción
