@@ -298,15 +298,18 @@ app.post("/pensionato", async (req, res) => {
         const sheets = await getGoogleSheetsClient();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
+        // Obtener la fecha y hora actuales
+        const currentDate = new Date().toLocaleString("it-IT");
+
         // Guardar datos en Google Sheets
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
-            range: "Pensionati!A1:L1",
+            range: "Pensionati!A1:L1", // Asegúrate de que el rango sea correcto
             valueInputOption: "USER_ENTERED",
             resource: {
                 values: [
                     [
-                        new Date().toLocaleString("it-IT"), // Fecha y hora en la primera celda
+                        currentDate, // Aquí estamos añadiendo la fecha en la primera columna
                         nome,
                         cognome,
                         mail,
@@ -344,7 +347,7 @@ app.post("/pensionato", async (req, res) => {
             spreadsheetId: agentSheetId,
             range: "Pensionati!A1:L1", // Ajusta el rango según la estructura de la hoja
             valueInputOption: 'RAW',
-            requestBody: { values: [[nome, cognome, mail, telefono, pensionAmount, pensioneNetta, entePensionistico, pensioneType, birthDate, province, privacyAccepted ? "SI" : "NO"]] },
+            requestBody: { values: [[currentDate, nome, cognome, mail, telefono, pensionAmount, pensioneNetta, entePensionistico, pensioneType, birthDate, province, privacyAccepted ? "SI" : "NO"]] },
         });
         console.log("Datos guardados correctamente en la hoja del agente.");
 
