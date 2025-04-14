@@ -27,17 +27,37 @@ app.get('/', (req, res) => {
     res.send('API funcionando correctamente');
 });
 
-// Lista de destinatarios para el endpoint /manuale_aiquinto
-const manualRecipients = [
-    "it@creditplan.it",
-    "eugenioia@creditplan.it",
-    "matiasgalliani00@gmail.com"
-];
+// Extraer los destinatarios desde .env y convertirlos en un array
+const manualRecipients = process.env.MANUAL_RECIPIENTS
+    ? process.env.MANUAL_RECIPIENTS.split(',').map(email => email.trim())
+    : [];
+
+if (manualRecipients.length === 0) {
+    console.error("No hay destinatarios configurados en MANUAL_RECIPIENTS");
+    process.exit(1);
+}
+
+// Parsear el mapeo de cada agente a su Google Sheet privado desde la variable AGENT_SHEETS
+const agentSheetMapping = {};
+if (process.env.AGENT_SHEETS) {
+    process.env.AGENT_SHEETS.split(',').forEach(pair => {
+        const [email, sheetId] = pair.split(':').map(s => s.trim());
+        if (email && sheetId) {
+            agentSheetMapping[email] = sheetId;
+        }
+    });
+}
+
+// Verificar que cada agente tenga configurado su sheet
+manualRecipients.forEach(email => {
+    if (!agentSheetMapping[email]) {
+        console.error(`No se ha configurado una hoja para el agente ${email}`);
+    }
+});
 
 // Índice global para el mecanismo de round-robin
 let roundRobinIndex = 0;
 
-// Endpoint para guardar datos en Google Sheets (Manual Leads)
 app.post('/manuale_aiquinto', async (req, res) => {
     console.log("=== Iniciando procesamiento de /manuale_aiquinto ===");
     console.log("Datos recibidos:", req.body);
@@ -47,9 +67,26 @@ app.post('/manuale_aiquinto', async (req, res) => {
         const sheets = await getGoogleSheetsClient();
         console.log("Cliente de Google Sheets inicializado correctamente.");
 
-        const spreadsheetID = process.env.GOOGLE_SHEET_ID;
-        const range = "'Manual Leads'!A1:E1"; // Ajusta el rango según la cantidad de columnas
+        // Seleccionar el destinatario actual usando round-robin
+        const recipient = manualRecipients[roundRobinIndex];
+        console.log("Destinatario seleccionado:", recipient);
 
+        // Actualizar el índice para el próximo correo
+        roundRobinIndex = (roundRobinIndex + 1) % manualRecipients.length;
+        console.log("Nuevo índice round-robin:", roundRobinIndex);
+
+        // Obtener el ID del Google Sheet privado para este agente
+        const agentSheetId = agentSheetMapping[recipient];
+        if (!agentSheetId) {
+            console.error(`No se ha configurado una hoja para el agente ${recipient}`);
+            return res.status(500).json({ error: 'Configuración de hoja privada faltante para el agente' });
+        }
+
+        // Definir el rango donde se guardarán los datos
+        // Asumimos que cada hoja tiene una pestaña llamada "Leads"
+        const range = "Leads!A1:E1"; // Puedes ajustar el rango según sea necesario
+
+        // Suponemos que 'datos' es un array con [nome, cognome, email, telefono, ...otros]
         const datos = req.body.datos;
 
         if (!Array.isArray(datos)) {
@@ -63,17 +100,17 @@ app.post('/manuale_aiquinto', async (req, res) => {
         const emailField = req.body.email || (datos.length >= 3 ? datos[2] : 'Non specificato');
         const telefono = req.body.telefono || (datos.length >= 4 ? datos[3] : 'Non specificato');
 
-        // Guardar datos en Google Sheets
-        console.log("Guardando datos en Google Sheets...");
+        // Guardar datos en el Google Sheet privado del agente
+        console.log(`Guardando datos en la hoja del agente ${recipient} (Sheet ID: ${agentSheetId})...`);
         await sheets.spreadsheets.values.append({
-            spreadsheetId: spreadsheetID,
+            spreadsheetId: agentSheetId,
             range,
             valueInputOption: 'RAW',
             requestBody: {
                 values: [datos],
             },
         });
-        console.log("Datos guardados correctamente en Google Sheets.");
+        console.log("Datos guardados correctamente en el Google Sheet del agente.");
 
         // Preparar el contenido del correo
         const textBody =
@@ -123,16 +160,8 @@ Saluti,
   </body>
 </html>`;
 
-        // Seleccionar el destinatario actual usando round-robin
-        const recipient = manualRecipients[roundRobinIndex];
-        console.log("Destinatario seleccionado:", recipient);
-
-        // Actualizar el índice para el próximo correo
-        roundRobinIndex = (roundRobinIndex + 1) % manualRecipients.length;
-        console.log("Nuevo índice round-robin:", roundRobinIndex);
-
         const emailData = {
-            from: "€ugenio IA <eugenioia@resend.dev>",
+            from: "€ugenio IA <eugenioia@resend.dev>", // recuerda que en entorno de pruebas solo se pueden enviar a la dirección verificada
             to: recipient,
             subject: "Nuovo Lead di Contatto Manuale",
             text: textBody,
