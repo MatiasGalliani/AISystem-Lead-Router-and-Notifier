@@ -167,7 +167,7 @@ Saluti,
       </div>
       <div class="footer">
         <p>Saluti</p>
-        <img class="logo" src="https://i.imgur.com/1avwDd5.png" alt="€ugenio IA" style="width: 150px;" />
+        <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px;" />
       </div>
     </div>
   </body>
@@ -210,7 +210,7 @@ AIQuinto`;
   <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
     <!-- Header: imagen con URL absoluto -->
     <div>
-      <img src="https://i.imgur.com/DbNTDpS.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
+      <img src="https://i.imgur.com/1avwDd5.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
     </div>
     <!-- Título -->
     <div style="text-align: center; padding: 1rem 0;">
