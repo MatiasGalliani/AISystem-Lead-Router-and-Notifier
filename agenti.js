@@ -10,42 +10,54 @@ async function getGoogleSheetsClient() {
 }
 
 async function assegnaAgenteRoundRobin() {
-    const sheetId = process.env.SHEET_AGENTI_ID;
+    const ID_SHEET_AGENTI = process.env.SHEET_AGENTI_ID; // ID del documento "Agenti AIQuinto.it"
     const sheets = await getGoogleSheetsClient();
-    const range = "AgentiAttivi!A2:F";
-    const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range });
+
+    const range = "AgentiAttivi!A2:F"; // Asumimos que los headers están en A1:F1
+    const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: ID_SHEET_AGENTI,
+        range,
+    });
 
     const rows = res.data.values || [];
 
-    const agentiAttivi = rows.map((r, i) => ({
-        rowIndex: i + 2,
-        nome: r[0],
-        email: r[1],
-        sheetId: r[2],
-        calendly: r[3],
-        stato: r[4],
-        ultimoLead: r[5] || "",
-    })).filter(a => a.stato?.toLowerCase() === "attivo");
+    const agentiAttivi = rows
+        .map((r, index) => ({
+            rowIndex: index + 2, // porque la hoja empieza en A2
+            nome: r[0],
+            email: r[1],
+            sheetId: r[2],
+            calendly: r[3],
+            stato: r[4],
+            ultimoLead: r[5] || ""
+        }))
+        .filter(a => a.stato?.toLowerCase() === "attivo");
 
-    if (agentiAttivi.length === 0) throw new Error("Nessun agente attivo trovato");
+    if (agentiAttivi.length === 0) {
+        throw new Error("❌ No hay agentes activos disponibles.");
+    }
 
+    // Ordenar por fecha de último lead (el más antiguo primero)
     agentiAttivi.sort((a, b) => {
         if (!a.ultimoLead) return -1;
         if (!b.ultimoLead) return 1;
         return new Date(a.ultimoLead) - new Date(b.ultimoLead);
     });
 
-    const agenteSelezionato = agentiAttivi[0];
-    const ora = new Date().toISOString();
+    const agenteSeleccionado = agentiAttivi[0];
 
+    // Registrar la hora actual como último lead asignado
+    const now = new Date().toISOString();
     await sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
-        range: `AgentiAttivi!F${agenteSelezionato.rowIndex}`,
+        spreadsheetId: ID_SHEET_AGENTI,
+        range: `AgentiAttivi!F${agenteSeleccionado.rowIndex}`,
         valueInputOption: "USER_ENTERED",
-        requestBody: { values: [[ora]] },
+        requestBody: {
+            values: [[now]]
+        }
     });
 
-    return agenteSelezionato;
+    return agenteSeleccionado;
 }
 
 module.exports = { assegnaAgenteRoundRobin };
