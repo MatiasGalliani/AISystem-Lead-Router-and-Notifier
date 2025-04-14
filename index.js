@@ -99,7 +99,7 @@ app.post('/manuale_aiquinto', async (req, res) => {
         }
 
         // Definir el rango donde se guardarán los datos en la hoja privada
-        const range = "Leads!A1:E1"; // Ajusta el rango según la estructura de la hoja
+        const range = "Manuale!A1:E1"; // Ajusta el rango según la estructura de la hoja
 
         // Suponemos que 'datos' es un array con [nome, cognome, email, telefono, ...otros]
         const datos = req.body.datos;
