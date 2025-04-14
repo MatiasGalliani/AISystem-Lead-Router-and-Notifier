@@ -58,6 +58,22 @@ manualRecipients.forEach(email => {
 // Índice global para el mecanismo de round-robin
 let roundRobinIndex = 0;
 
+const agentInfoMapping = {};
+if (process.env.AGENT_INFO) {
+    process.env.AGENT_INFO.split(',').forEach(pair => {
+        // Suponemos que cada par está separado por dos puntos (:)
+        const parts = pair.split(':').map(s => s.trim());
+        if (parts.length === 4) {
+            const [email, name, phone, calendly] = parts;
+            agentInfoMapping[email] = { name, phone, calendly };
+        } else {
+            console.error("Formato incorrecto en AGENT_INFO para:", pair);
+        }
+    });
+} else {
+    console.error("AGENT_INFO no está definido en el .env");
+}
+
 app.post('/manuale_aiquinto', async (req, res) => {
     console.log("=== Iniciando procesamiento de /manuale_aiquinto ===");
     console.log("Datos recibidos:", req.body);
