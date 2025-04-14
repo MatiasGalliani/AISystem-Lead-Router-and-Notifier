@@ -39,16 +39,21 @@ let roundRobinIndex = 0;
 
 // Endpoint para guardar datos en Google Sheets (Manual Leads)
 app.post('/manuale_aiquinto', async (req, res) => {
+    console.log("=== Iniciando procesamiento de /manuale_aiquinto ===");
+    console.log("Datos recibidos:", req.body);
+
     try {
         // Autenticación y configuración de Google Sheets
         const sheets = await getGoogleSheetsClient();
+        console.log("Cliente de Google Sheets inicializado correctamente.");
+
         const spreadsheetID = process.env.GOOGLE_SHEET_ID;
         const range = "'Manual Leads'!A1:E1"; // Ajusta el rango según la cantidad de columnas
 
-        // Suponemos que 'datos' es un array con [nome, cognome, email, telefono, ...otros]
         const datos = req.body.datos;
 
         if (!Array.isArray(datos)) {
+            console.error("Error: 'datos' no es un array.");
             return res.status(400).json({ error: 'Datos debe ser un array' });
         }
 
@@ -59,6 +64,7 @@ app.post('/manuale_aiquinto', async (req, res) => {
         const telefono = req.body.telefono || (datos.length >= 4 ? datos[3] : 'Non specificato');
 
         // Guardar datos en Google Sheets
+        console.log("Guardando datos en Google Sheets...");
         await sheets.spreadsheets.values.append({
             spreadsheetId: spreadsheetID,
             range,
@@ -67,6 +73,7 @@ app.post('/manuale_aiquinto', async (req, res) => {
                 values: [datos],
             },
         });
+        console.log("Datos guardados correctamente en Google Sheets.");
 
         // Preparar el contenido del correo
         const textBody =
@@ -118,19 +125,23 @@ Saluti,
 
         // Seleccionar el destinatario actual usando round-robin
         const recipient = manualRecipients[roundRobinIndex];
+        console.log("Destinatario seleccionado:", recipient);
+
         // Actualizar el índice para el próximo correo
         roundRobinIndex = (roundRobinIndex + 1) % manualRecipients.length;
+        console.log("Nuevo índice round-robin:", roundRobinIndex);
 
         const emailData = {
-            from: "€ugenio IA <eugenioia@resend.dev>", // Dirección del remitente
-            to: recipient,  // Destinatario seleccionado dinámicamente
+            from: "€ugenio IA <eugenioia@resend.dev>",
+            to: recipient,
             subject: "Nuovo Lead di Contatto Manuale",
             text: textBody,
             html: htmlBody
         };
 
-        // Enviar el correo usando Resend
+        console.log("Enviando correo...");
         await resend.emails.send(emailData);
+        console.log("Correo enviado con éxito a:", recipient);
 
         // Responder al cliente
         res.json({ message: 'Datos guardados y email enviado con éxito' });
