@@ -113,7 +113,8 @@ app.post('/manuale_aiquinto', async (req, res) => {
         const cognome = req.body.cognome || (datos.length >= 2 ? datos[1] : 'Non specificato');
         const emailField = req.body.email || (datos.length >= 3 ? datos[2] : 'Non specificato');
         const telefono = req.body.telefono || (datos.length >= 4 ? datos[3] : 'Non specificato');
-        const clientName = `${req.body.nome || ''} ${req.body.cognome || ''}`.trim() || 'Cliente';
+        // Usar las variables ya definidas para formar el nombre del cliente
+        const clientName = `${nome} ${cognome}`.trim() || 'Cliente';
 
         // Guardar datos en el Google Sheet privado del agente
         console.log(`Guardando datos en la hoja del agente ${recipient} (Sheet ID: ${agentSheetId})...`);
