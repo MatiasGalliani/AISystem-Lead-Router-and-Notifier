@@ -9,7 +9,12 @@ const app = express();
 const resend = new Resend(process.env.RESEND_API_KEY);
 const PORT = process.env.PORT || 3500;
 
-app.use(cors());
+app.use(cors({
+    origin: "https://www.aiquinto.it",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"]
+  }));
+
 app.use(express.json());
 
 async function getGoogleSheetsClient() {
