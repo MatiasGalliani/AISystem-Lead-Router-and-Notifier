@@ -167,7 +167,7 @@ Saluti,
       </div>
       <div class="footer">
         <p>Saluti</p>
-        <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px;" />
+        <img class="logo" src="https://i.imgur.com/1avwDd5.png" alt="€ugenio IA" style="width: 150px;" />
       </div>
     </div>
   </body>
