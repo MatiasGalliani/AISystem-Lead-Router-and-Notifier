@@ -61,8 +61,8 @@ let roundRobinIndex = 0;
 const agentInfoMapping = {};
 if (process.env.AGENT_INFO) {
     process.env.AGENT_INFO.split(',').forEach(pair => {
-        // Suponemos que cada par está separado por dos puntos (:)
-        const parts = pair.split(':').map(s => s.trim());
+        // Ahora usamos '|' como delimitador
+        const parts = pair.split('|').map(s => s.trim());
         if (parts.length === 4) {
             const [email, name, phone, calendly] = parts;
             agentInfoMapping[email] = { name, phone, calendly };
