@@ -521,8 +521,12 @@ app.post("/dipendente", async (req, res) => {
     } = req.body;
 
     try {
+        // Autenticación y configuración de Google Sheets
         const sheets = await getGoogleSheetsClient();
         const sheetId = process.env.GOOGLE_SHEET_ID;
+
+        // Obtener la fecha y hora actuales
+        const currentDate = new Date().toLocaleString("it-IT");
 
         // Guardar datos en Google Sheets
         await sheets.spreadsheets.values.append({
@@ -532,7 +536,7 @@ app.post("/dipendente", async (req, res) => {
             resource: {
                 values: [
                     [
-                        new Date().toLocaleString("it-IT"),
+                        currentDate, // Agregar la fecha en la primera columna (A)
                         nome,
                         cognome,
                         mail,
@@ -550,9 +554,33 @@ app.post("/dipendente", async (req, res) => {
             }
         });
 
-        // Preparar email de notificación para lead dipendente
-        const subject = "Nuovo Lead Dipendente";
-        const textBody =
+        // Seleccionar el destinatario actual usando round-robin
+        const recipient = manualRecipients[roundRobinIndex];
+        console.log("Destinatario seleccionado:", recipient);
+
+        // Actualizar el índice para el próximo correo
+        roundRobinIndex = (roundRobinIndex + 1) % manualRecipients.length;
+        console.log("Nuevo índice round-robin:", roundRobinIndex);
+
+        // Obtener el ID del Google Sheet privado para este agente
+        const agentSheetId = agentSheetMapping[recipient];
+        if (!agentSheetId) {
+            console.error(`No se ha configurado una hoja para el agente ${recipient}`);
+            return res.status(500).json({ error: 'Configuración de hoja privada faltante para el agente' });
+        }
+
+        // Guardar datos en el Google Sheet privado del agente
+        console.log(`Guardando datos en la hoja del agente ${recipient} (Sheet ID: ${agentSheetId})...`);
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: agentSheetId,
+            range: "Dipendenti!A1:M1", // Ajustar según la estructura de la hoja
+            valueInputOption: 'RAW',
+            requestBody: { values: [[currentDate, nome, cognome, mail, telefono, amountRequested, netSalary, depType, depType === "Privato" ? secondarySelection : "", contractType, birthDate, province, privacyAccepted ? "SI" : "NO"]] },
+        });
+        console.log("Datos guardados correctamente en la hoja del agente.");
+
+        // Preparar el contenido del correo para el agente
+        const textBodyAgent =
             `Nuovo Lead Dipendente\n\n` +
             `Nome: ${nome}\n` +
             `Cognome: ${cognome}\n` +
@@ -567,34 +595,136 @@ app.post("/dipendente", async (req, res) => {
             `Provincia: ${province}\n` +
             `Privacy Accettata: ${privacyAccepted ? "SI" : "NO"}\n`;
 
-        const htmlBody = `
+        const htmlBodyAgent = `
 <html>
-    <body>
-        <h3>Nuovo Lead Dipendente</h3>
-        <p><strong>Nome:</strong> ${nome}</p>
-        <p><strong>Cognome:</strong> ${cognome}</p>
-        <p><strong>Email:</strong> ${mail}</p>
-        <p><strong>Telefono:</strong> ${telefono}</p>
-        <p><strong>Importo Richiesto:</strong> ${amountRequested}</p>
-        <p><strong>Salario Netto:</strong> ${netSalary}</p>
-        <p><strong>Tipo di Dipendente:</strong> ${depType}</p>
-        <p><strong>Selezione Secondaria:</strong> ${depType === "Privato" ? secondarySelection : "N/A"}</p>
-        <p><strong>Tipo di Contratto:</strong> ${contractType}</p>
-        <p><strong>Data di Nascita:</strong> ${birthDate}</p>
-        <p><strong>Provincia:</strong> ${province}</p>
-        <p><strong>Privacy Accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
-    </body>
-</html>`;
+  <head>
+    <meta charset="UTF-8">
+    <style>
+      body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 0; }
+      .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+      .header { background-color: #007bff; color: #fff; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+      .logo { max-width: 150px; height: auto; margin-bottom: 10px; }
+      .content { padding: 20px; }
+      .data-item { margin-bottom: 10px; }
+      .label { font-weight: bold; }
+      .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #777; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>Nuovo Lead Dipendente</h2>
+      </div>
+      <div class="content">
+        <p>Ciao,</p>
+        <p>È arrivato un nuovo lead dipendente con i seguenti dettagli:</p>
+        <div class="data-item"><span class="label">Nome:</span> ${nome}</div>
+        <div class="data-item"><span class="label">Cognome:</span> ${cognome}</div>
+        <div class="data-item"><span class="label">Email:</span> ${mail}</div>
+        <div class="data-item"><span class="label">Telefono:</span> ${telefono}</div>
+        <div class="data-item"><span class="label">Importo Richiesto:</span> ${amountRequested}</div>
+        <div class="data-item"><span class="label">Salario Netto:</span> ${netSalary}</div>
+        <div class="data-item"><span class="label">Tipo di Dipendente:</span> ${depType}</div>
+        <div class="data-item"><span class="label">Selezione Secondaria:</span> ${depType === "Privato" ? secondarySelection : "N/A"}</div>
+        <div class="data-item"><span class="label">Tipo di Contratto:</span> ${contractType}</div>
+        <div class="data-item"><span class="label">Data di Nascita:</span> ${birthDate}</div>
+        <div class="data-item"><span class="label">Provincia:</span> ${province}</div>
+        <div class="data-item"><span class="label">Privacy Accettata:</span> ${privacyAccepted ? "SI" : "NO"}</div>
+      </div>
+      <div class="footer">
+        <p>Saluti</p>
+        <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px;" />
+      </div>
+    </div>
+  </body>
+</html>
+`;
 
-        const emailData = {
+        const emailDataAgent = {
             from: "€ugenio IA <eugenioia@resend.dev>",
-            to: "andreafriggieri@creditplan.it",
-            subject,
-            text: textBody,
-            html: htmlBody
+            to: recipient, // El agente asignado
+            subject: "Nuovo Lead Dipendente",
+            text: textBodyAgent,
+            html: htmlBodyAgent
         };
 
-        await resend.emails.send(emailData);
+        console.log("Enviando correo al agente...");
+        await resend.emails.send(emailDataAgent);
+        console.log("Correo enviado con éxito al agente.");
+
+        // Preparar el contenido del correo para el cliente utilizando la información del agente asignado
+        const agentInfo = agentInfoMapping[recipient]; // Información del agente asignado
+        const clientName = `${nome} ${cognome}`;
+
+        const textBodyClient =
+            `Hola ${clientName},\n\nGracias por enviarnos tu información. El agente asignado para ayudarte es ${agentInfo ? agentInfo.name : 'nuestro agente'}.\n` +
+            `${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}\n` +
+            `Si lo deseas, también puedes agendar una llamada usando el siguiente enlace: ${agentInfo && agentInfo.calendly ? agentInfo.calendly : ""}\n\nSaludos,\nAIQuinto`;
+
+        const htmlBodyClient = `
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conosci il tuo agente in Creditplan</title>
+</head>
+<body style="background-color: #eff6ff; margin: 0; padding: 0;">
+  <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+    <div>
+      <img src="https://i.imgur.com/1avwDd5.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
+    </div>
+    <div style="text-align: center; padding: 1rem 0;">
+      <span style="font-size: 2.25rem; font-weight: bold; color: #1e3a8a;">Grazie!</span>
+    </div>
+    <div style="padding: 1.5rem; color: #4a5568;">
+      <p style="margin-bottom: 1rem;">Ciao <strong>${clientName},</strong></p>
+      <p style="margin-bottom: 1rem;">
+        Ti ringraziamo per aver scelto Creditplan per le tue esigenze finanziarie. Siamo lieti di poterti supportare e ci impegniamo a fornirti l’assistenza più adeguata e personalizzata.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Il nostro sistema ha processato la tua richiesta e, in base alla nostra organizzazione, <strong>ti è stato assegnato un agente dedicato</strong> che si occuperà di fornirti tutte le informazioni necessarie.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro specialista'}</strong>.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure fissare una chiamata utilizzando il link qui sotto:
+      </p>
+      <div style="text-align: center;">
+        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" 
+           style="display: inline-block; padding: 0.5rem 1.5rem; background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          Fissa una chiamata
+        </a>
+      </div>
+      <p style="margin-top: 1.5rem;">
+        Siamo certi che il nostro team saprà offrirti la migliore consulenza per le tue necessità finanziarie.
+      </p>
+      <p style="margin-top: 0.5rem;">
+        Cordiali saluti,<br>
+        Il team di Creditplan
+      </p>
+    </div>
+    <div style="background-color: #eff6ff; padding: 1rem; text-align: center; font-size: 0.875rem; color: #718096; border-top: 1px solid #e2e8f0;">
+      &copy; 2025 Creditplan Società di Mediazione Creditizia. Tutti i diritti riservati.<br>
+      Via Giacomo Tosi 3, Monza, MB (20900)
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+        const emailDataClient = {
+            from: "AIQuinto <eugenioia@resend.dev>",
+            to: mail,
+            subject: "Conosci il tuo agente per il settore dipendenti - Creditplan",
+            text: textBodyClient,
+            html: htmlBodyClient
+        };
+
+        console.log("Enviando correo al cliente...");
+        await resend.emails.send(emailDataClient);
+        console.log("Correo enviado con éxito al cliente.");
 
         res.status(200).json({ message: "Dati dipendente salvati e email inviata con successo!" });
     } catch (error) {
