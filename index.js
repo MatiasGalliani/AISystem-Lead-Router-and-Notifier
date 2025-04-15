@@ -260,7 +260,7 @@ AIQuinto`;
         const emailDataClient = {
             from: "AIQuinto <eugenioia@resend.dev>", // Usa un remitente verificado en producción
             to: emailField,  // Correo del cliente
-            subject: "Conoce a tu agente asignado en AIQuinto",
+            subject: "Conosci al tuo Consulente per la Cessione del Quinto con Creditplan",
             text: textBodyClient,
             html: htmlBodyClient
         };
@@ -486,7 +486,7 @@ app.post("/pensionato", async (req, res) => {
         const emailDataClient = {
             from: "AIQuinto <eugenioia@resend.dev>",
             to: mail,
-            subject: "Conosci il tuo agente per il settore pensioni - Creditplan",
+            subject: "Conosci il tuo consulente per la Cessione del Quinto con Creditplan",
             text: textBodyClient,
             html: htmlBodyClient
         };
@@ -716,7 +716,7 @@ app.post("/dipendente", async (req, res) => {
         const emailDataClient = {
             from: "AIQuinto <eugenioia@resend.dev>",
             to: mail,
-            subject: "Conosci il tuo agente per il settore dipendenti - Creditplan",
+            subject: "Conosci il tuo consulente per la Cessione del Quinto con Creditplan",
             text: textBodyClient,
             html: htmlBodyClient
         };
@@ -906,7 +906,7 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
         const agentInfo = aimediciAgentInfoMapping[recipient];
         const clientName = `${nome} ${cognome}`.trim() || 'Cliente';
 
-        const subjectClient = "Conosci il tuo agente per il settore pensioni - Creditplan";
+        const subjectClient = "Conosci il tuo consulente AIMedici.it by Creditplan";
         const textBodyClient = `
 Hola ${clientName},
 
@@ -971,7 +971,7 @@ AIQuinto
         `;
 
         const emailDataClient = {
-            from: "AIQuinto <eugenioia@resend.dev>",
+            from: "AIMedici.it <eugenioia@resend.dev>",
             to: mail,
             subject: subjectClient,
             text: textBodyClient,
