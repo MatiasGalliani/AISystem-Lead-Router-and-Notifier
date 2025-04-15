@@ -739,6 +739,7 @@ const aimediciAgentInfoMapping = {};
 if (process.env.AIMEDICI_AGENT_INFO) {
     process.env.AIMEDICI_AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
+        console.log("Procesando par:", pair, "->", parts);  // Debug: mostrar resultado del split
         if (parts.length === 4) {
             const [email, name, phone, calendly] = parts;
             aimediciAgentInfoMapping[email] = { name, phone, calendly };
