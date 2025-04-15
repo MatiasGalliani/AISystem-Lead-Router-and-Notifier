@@ -61,7 +61,6 @@ let roundRobinIndex = 0;
 const agentInfoMapping = {};
 if (process.env.AGENT_INFO) {
     process.env.AGENT_INFO.split(',').forEach(pair => {
-        // Ahora usamos '|' como delimitador
         const parts = pair.split('|').map(s => s.trim());
         if (parts.length === 4) {
             const [email, name, phone, calendly] = parts;
@@ -735,6 +734,21 @@ app.post("/dipendente", async (req, res) => {
 
 // Declaramos la variable de round robin exclusiva para AIMedici
 let aimediciRoundRobinIndex = 0;
+
+const aimediciAgentInfoMapping = {};
+if (process.env.AIMEDICI_AGENT_INFO) {
+    process.env.AIMEDICI_AGENT_INFO.split(',').forEach(pair => {
+        const parts = pair.split('|').map(s => s.trim());
+        if (parts.length === 4) {
+            const [email, name, phone, calendly] = parts;
+            aimediciAgentInfoMapping[email] = { name, phone, calendly };
+        } else {
+            console.error("Formato incorrecto en AIMEDICI_AGENT_INFO para:", pair);
+        }
+    });
+} else {
+    console.error("AIMEDICI_AGENT_INFO no está definido en el .env");
+}
 
 app.post("/aimediciform", async (req, res) => {
   const {
