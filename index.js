@@ -989,51 +989,111 @@ AIQuinto
     }
 });
 
-// Endpoint para "aifidi"
+// Declaramos la variable de round robin exclusiva para AIFidi
+let aifidiRoundRobinIndex = 0;
+
 app.post("/aifidi", async (req, res) => {
-    const {
-        nome,
-        cognome,
-        financingScope,
-        importoRichiesto,
-        nomeAzienda,
-        cittaSedeLegale,
-        cittaSedeOperativa,
-        mail,
-        telefono,
-        privacyAccepted
-    } = req.body;
+  const {
+    nome,
+    cognome,
+    financingScope,
+    importoRichiesto,
+    nomeAzienda,
+    cittaSedeLegale,
+    cittaSedeOperativa,
+    mail,
+    telefono,
+    privacyAccepted
+  } = req.body;
 
-    try {
-        const sheets = await getGoogleSheetsClient();
-        const sheetId = process.env.GOOGLE_SHEET_ID;
+  try {
+    // Autenticación y configuración de Google Sheets
+    const sheets = await getGoogleSheetsClient();
+    const sheetId = process.env.GOOGLE_SHEET_ID;
 
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: sheetId,
-            range: "AIFidi.it!A1:K1",
-            valueInputOption: "USER_ENTERED",
-            resource: {
-                values: [
-                    [
-                        new Date().toLocaleString("it-IT"),
-                        nome,
-                        cognome,
-                        mail,
-                        telefono,
-                        financingScope,
-                        nomeAzienda,
-                        cittaSedeLegale,
-                        cittaSedeOperativa,
-                        importoRichiesto,
-                        privacyAccepted ? "SI" : "NO"
-                    ],
-                ],
-            },
-        });
+    // Convertir la variable AIFIDI_RECIPIENTS en un array
+    const aifidiRecipients = process.env.AIFIDI_RECIPIENTS
+      ? process.env.AIFIDI_RECIPIENTS.split(',').map(e => e.trim())
+      : [];
+    if (aifidiRecipients.length === 0) {
+      console.error("No hay destinatarios configurados en AIFIDI_RECIPIENTS");
+      return res.status(500).json({ error: "AIFIDI_RECIPIENTS no configurado" });
+    }
 
-        // Preparar email de notificación para lead AIFidi
-        const subject = "Nuovo Lead AIFidi";
-        const textBody = `
+    // Convertir la variable AIFIDI_AGENT_SHEET_MAPPING en un objeto
+    const aifidiAgentSheetMapping = {};
+    if (process.env.AIFIDI_AGENT_SHEET_MAPPING) {
+      process.env.AIFIDI_AGENT_SHEET_MAPPING.split(',').forEach(pair => {
+        const [email, sheetId] = pair.split(':').map(s => s.trim());
+        if (email && sheetId) {
+          aifidiAgentSheetMapping[email] = sheetId;
+        }
+      });
+    } else {
+      console.error("AIFIDI_AGENT_SHEET_MAPPING no definido en el .env");
+      return res.status(500).json({ error: "AIFIDI_AGENT_SHEET_MAPPING no definido" });
+    }
+
+    // Convertir la variable AIFIDI_AGENT_INFO en un objeto usando "|" como delimitador
+    const aifidiAgentInfoMapping = {};
+    if (process.env.AIFIDI_AGENT_INFO) {
+      process.env.AIFIDI_AGENT_INFO.split(',').forEach(pair => {
+        const parts = pair.split('|').map(s => s.trim());
+        console.log("Procesando par:", pair, "->", parts);  // Debug: mostrar resultado del split
+        if (parts.length === 4) {
+          const [email, name, phone, calendly] = parts;
+          aifidiAgentInfoMapping[email] = { name, phone, calendly };
+        } else {
+          console.error("Formato incorrecto en AIFIDI_AGENT_INFO para:", pair);
+        }
+      });
+    } else {
+      console.error("AIFIDI_AGENT_INFO no está definido en el .env");
+      return res.status(500).json({ error: "AIFIDI_AGENT_INFO no definido" });
+    }
+
+    // Seleccionar el destinatario actual usando el round-robin exclusivo de AIFidi
+    const recipient = aifidiRecipients[aifidiRoundRobinIndex];
+    console.log("Destinatario AIFidi seleccionado:", recipient);
+    aifidiRoundRobinIndex = (aifidiRoundRobinIndex + 1) % aifidiRecipients.length;
+    console.log("Nuevo índice round-robin AIFidi:", aifidiRoundRobinIndex);
+
+    // Obtener la hoja privada del agente correspondiente para AIFidi
+    const agentSheetId = aifidiAgentSheetMapping[recipient];
+    if (!agentSheetId) {
+      console.error(`No se ha configurado una hoja para el agente ${recipient}`);
+      return res.status(500).json({ error: "Configuración de hoja privada faltante para el agente AIFidi" });
+    }
+
+    // Guardar los datos en la hoja privada del agente de AIFidi (en la pestaña "AIFidi.it" y rango A1:J1)
+    console.log(`Guardando datos en la hoja del agente AIFidi ${recipient} (Sheet ID: ${agentSheetId})...`);
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: agentSheetId,
+      range: "AIFidi.it!A1:J1", // Asegúrate de que este rango corresponda a la estructura de la hoja
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [
+          [
+            new Date().toLocaleString("it-IT"),
+            nome,
+            cognome,
+            financingScope,
+            importoRichiesto,
+            cittaSedeLegale,  // En este ejemplo usamos cittaSedeLegale para AIFidi; puedes ajustar según lo que necesites
+            cittaSedeOperativa,
+            mail,
+            telefono,
+            privacyAccepted ? "SI" : "NO"
+          ]
+        ]
+      }
+    });
+    console.log("Datos guardados correctamente en la hoja del agente AIFidi.");
+
+    // Preparar el contenido del correo para el agente (estilo similar a los otros endpoints)
+    // Cambiamos la imagen del header y adaptamos el remitente a AIFidi
+    const subjectAgent = "Nuovo Lead AIFidi";
+    const textBodyAgent = `
 Nuovo Lead AIFidi
 
 Nome: ${nome}
@@ -1042,43 +1102,152 @@ Email: ${mail}
 Telefono: ${telefono}
 Scopo del finanziamento: ${financingScope}
 Importo richiesto: ${importoRichiesto}
-Nome azienda: ${nomeAzienda}
-Città sede legale: ${cittaSedeLegale}
-Città sede operativa: ${cittaSedeOperativa}
+Città di residenza: ${cittaSedeLegale}
+Provincia: ${cittaSedeOperativa}
 Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
-`;
-        const htmlBody = `
-<html>
-  <body>
-    <h3>Nuovo Lead AIFidi</h3>
-    <p><strong>Nome:</strong> ${nome}</p>
-    <p><strong>Cognome:</strong> ${cognome}</p>
-    <p><strong>Email:</strong> ${mail}</p>
-    <p><strong>Telefono:</strong> ${telefono}</p>
-    <p><strong>Scopo del finanziamento:</strong> ${financingScope}</p>
-    <p><strong>Importo richiesto:</strong> ${importoRichiesto}</p>
-    <p><strong>Nome azienda:</strong> ${nomeAzienda}</p>
-    <p><strong>Città sede legale:</strong> ${cittaSedeLegale}</p>
-    <p><strong>Città sede operativa:</strong> ${cittaSedeOperativa}</p>
-    <p><strong>Privacy accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
-  </body>
+    `;
+    const htmlBodyAgent = `
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nuovo Lead AIFidi</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+    .header { background-color: #007bff; color: #fff; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+    .logo { max-width: 150px; height: auto; margin-bottom: 10px; }
+    .content { padding: 20px; }
+    .data-item { margin-bottom: 10px; }
+    .label { font-weight: bold; }
+    .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #777; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Nuovo Lead AIFidi</h2>
+    </div>
+    <div class="content">
+      <p>Ciao,</p>
+      <p>È arrivato un nuovo lead AIFidi con i seguenti dettagli:</p>
+      <div class="data-item"><span class="label">Nome:</span> ${nome}</div>
+      <div class="data-item"><span class="label">Cognome:</span> ${cognome}</div>
+      <div class="data-item"><span class="label">Email:</span> ${mail}</div>
+      <div class="data-item"><span class="label">Telefono:</span> ${telefono}</div>
+      <div class="data-item"><span class="label">Scopo del finanziamento:</span> ${financingScope}</div>
+      <div class="data-item"><span class="label">Importo richiesto:</span> ${importoRichiesto}</div>
+      <div class="data-item"><span class="label">Città di residenza:</span> ${cittaSedeLegale}</div>
+      <div class="data-item"><span class="label">Provincia:</span> ${cittaSedeOperativa}</div>
+      <div class="data-item"><span class="label">Privacy accettata:</span> ${privacyAccepted ? "SI" : "NO"}</div>
+    </div>
+    <div class="footer">
+      <p>Saluti</p>
+      <img class="logo" src="https://i.imgur.com/RLXJM3w.png" alt="AIFidi.it" style="width: 150px;" />
+    </div>
+  </div>
+</body>
 </html>
-`;
-        const emailData = {
-            from: "€ugenio IA <eugenioia@resend.dev>",
-            to: "thomasiezzi@creditplan.it",
-            subject,
-            text: textBody,
-            html: htmlBody
-        };
+    `;
 
-        await resend.emails.send(emailData);
+    const emailDataAgent = {
+      from: "AIFidi.it <eugenioia@resend.dev>", // Remitente adaptado a AIFidi
+      to: recipient,
+      subject: subjectAgent,
+      text: textBodyAgent,
+      html: htmlBodyAgent
+    };
 
-        res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
-    } catch (error) {
-        console.error("Errore nell'invio dei dati o dell'email:", error);
-        res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
-    }
+    console.log("Enviando correo al agente AIFidi...");
+    await resend.emails.send(emailDataAgent);
+    console.log("Correo enviado con éxito al agente AIFidi.");
+
+    // Preparar el correo para el cliente utilizando la información del agente asignado
+    const agentInfo = aifidiAgentInfoMapping[recipient];
+    const clientName = `${nome} ${cognome}`.trim() || 'Cliente';
+
+    const subjectClient = "Conosci il tuo consulente AIFidi.it by Creditplan";
+    const textBodyClient = `
+Hola ${clientName},
+
+Grazie per averci inviato la tua informazione. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'il nostro agente'}.
+${agentInfo ? "Puoi contattarlo al " + agentInfo.phone : ""}
+Se lo desideri, puoi anche fissare una chiamata cliccando sul seguente link: ${agentInfo && agentInfo.calendly ? agentInfo.calendly : ""}
+
+Cordiali saluti,
+AIFidi.it by Creditplan
+    `;
+    const htmlBodyClient = `
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conosci il tuo consulente AIFidi.it by Creditplan</title>
+</head>
+<body style="background-color: #eff6ff; margin: 0; padding: 0;">
+  <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+    <div>
+      <img src="https://i.imgur.com/RLXJM3w.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
+    </div>
+    <div style="text-align: center; padding: 1rem 0;">
+      <span style="font-size: 2.25rem; font-weight: bold; color: #1e3a8a;">Grazie!</span>
+    </div>
+    <div style="padding: 1.5rem; color: #4a5568;">
+      <p style="margin-bottom: 1rem;">Ciao <strong>${clientName},</strong></p>
+      <p style="margin-bottom: 1rem;">
+        Ti ringraziamo per aver scelto AIFidi.it by Creditplan per le tue esigenze finanziarie. Siamo qui per aiutarti con tutte le informazioni di cui hai bisogno.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Il nostro sistema ha processato la tua richiesta e ti è stato assegnato un agente dedicato che ti fornirà tutte le informazioni necessarie.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro specialista'}</strong>.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure fissare una chiamata utilizzando il link qui sotto:
+      </p>
+      <div style="text-align: center;">
+        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" 
+           style="display: inline-block; padding: 0.5rem 1.5rem; background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          Fissa una chiamata
+        </a>
+      </div>
+      <p style="margin-top: 1.5rem;">
+        Siamo certi che il nostro team saprà offrirti la migliore consulenza per le tue necessità finanziarie.
+      </p>
+      <p style="margin-top: 0.5rem;">
+        Cordiali saluti,<br>
+        Il team di AIFidi.it by Creditplan
+      </p>
+    </div>
+    <div style="background-color: #eff6ff; padding: 1rem; text-align: center; font-size: 0.875rem; color: #718096; border-top: 1px solid #e2e8f0;">
+      &copy; 2025 AIFidi.it by Creditplan. Tutti i diritti riservati.<br>
+      Via Giacomo Tosi 3, Monza, MB (20900)
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    const emailDataClient = {
+      from: "AIFidi.it by Creditplan <eugenioia@resend.dev>",
+      to: mail,
+      subject: subjectClient,
+      text: textBodyClient,
+      html: htmlBodyClient
+    };
+
+    console.log("Enviando correo al cliente AIFidi...");
+    await resend.emails.send(emailDataClient);
+    console.log("Correo enviado con éxito al cliente AIFidi:", mail);
+
+    res.status(200).json({ message: "Dati salvati e email inviata con successo" });
+  } catch (error) {
+    console.error("Errore nell'invio dei dati o dell'email:", error);
+    res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
+  }
 });
 
 app.listen(PORT, () => {
