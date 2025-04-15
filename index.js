@@ -735,6 +735,7 @@ app.post("/dipendente", async (req, res) => {
 // Declaramos la variable de round robin exclusiva para AIMedici
 let aimediciRoundRobinIndex = 0;
 
+// Convertir la variable AIMEDICI_AGENT_INFO en un objeto utilizando "|" como delimitador
 const aimediciAgentInfoMapping = {};
 if (process.env.AIMEDICI_AGENT_INFO) {
     process.env.AIMEDICI_AGENT_INFO.split(',').forEach(pair => {
@@ -752,104 +753,86 @@ if (process.env.AIMEDICI_AGENT_INFO) {
 }
 
 app.post("/aimediciform", async (req, res) => {
-  const {
-    financingScope,
-    importoRichiesto,
-    cittaResidenza,
-    provinciaResidenza,
-    nome,
-    cognome,
-    mail,
-    telefono,
-    privacyAccepted
-  } = req.body;
+    const {
+        financingScope,
+        importoRichiesto,
+        cittaResidenza,
+        provinciaResidenza,
+        nome,
+        cognome,
+        mail,
+        telefono,
+        privacyAccepted
+    } = req.body;
 
-  try {
-    // Autenticación y configuración de Google Sheets
-    const sheets = await getGoogleSheetsClient();
+    try {
+        // Autenticación y configuración de Google Sheets
+        const sheets = await getGoogleSheetsClient();
 
-    // Convertir la variable AIMEDICI_RECIPIENTS en un array
-    const aimediciRecipients = process.env.AIMEDICI_RECIPIENTS
-      ? process.env.AIMEDICI_RECIPIENTS.split(',').map(e => e.trim())
-      : [];
-    if (aimediciRecipients.length === 0) {
-      console.error("No hay destinatarios configurados en AIMEDICI_RECIPIENTS");
-      return res.status(500).json({ error: "AIMEDICI_RECIPIENTS no configurado" });
-    }
-
-    // Convertir la variable AIMEDICI_AGENT_SHEET_MAPPING en un objeto
-    const aimediciAgentSheetMapping = {};
-    if (process.env.AIMEDICI_AGENT_SHEET_MAPPING) {
-      process.env.AIMEDICI_AGENT_SHEET_MAPPING.split(',').forEach(pair => {
-        const [email, sheetId] = pair.split(':').map(s => s.trim());
-        if (email && sheetId) {
-          aimediciAgentSheetMapping[email] = sheetId;
+        // Convertir la variable AIMEDICI_RECIPIENTS en un array
+        const aimediciRecipients = process.env.AIMEDICI_RECIPIENTS
+            ? process.env.AIMEDICI_RECIPIENTS.split(',').map(e => e.trim())
+            : [];
+        if (aimediciRecipients.length === 0) {
+            console.error("No hay destinatarios configurados en AIMEDICI_RECIPIENTS");
+            return res.status(500).json({ error: "AIMEDICI_RECIPIENTS no configurado" });
         }
-      });
-    } else {
-      console.error("AIMEDICI_AGENT_SHEET_MAPPING no definido en el .env");
-      return res.status(500).json({ error: "AIMEDICI_AGENT_SHEET_MAPPING no definido" });
-    }
 
-    // Convertir la variable AIMEDICI_AGENT_INFO en un objeto
-    const aimediciAgentInfoMapping = {};
-    if (process.env.AIMEDICI_AGENT_INFO) {
-      process.env.AIMEDICI_AGENT_INFO.split(',').forEach(pair => {
-        // Usamos ':' como delimitador (puedes ajustar si lo prefieres con otro delimitador)
-        const parts = pair.split(':').map(s => s.trim());
-        if (parts.length === 4) {
-          const [email, name, phone, calendly] = parts;
-          aimediciAgentInfoMapping[email] = { name, phone, calendly };
+        // Convertir la variable AIMEDICI_AGENT_SHEET_MAPPING en un objeto utilizando ":" como delimitador (si así lo definiste)
+        const aimediciAgentSheetMapping = {};
+        if (process.env.AIMEDICI_AGENT_SHEET_MAPPING) {
+            process.env.AIMEDICI_AGENT_SHEET_MAPPING.split(',').forEach(pair => {
+                const [email, sheetId] = pair.split(':').map(s => s.trim());
+                if (email && sheetId) {
+                    aimediciAgentSheetMapping[email] = sheetId;
+                }
+            });
         } else {
-          console.error("Formato incorrecto en AIMEDICI_AGENT_INFO para:", pair);
+            console.error("AIMEDICI_AGENT_SHEET_MAPPING no definido en el .env");
+            return res.status(500).json({ error: "AIMEDICI_AGENT_SHEET_MAPPING no definido" });
         }
-      });
-    } else {
-      console.error("AIMEDICI_AGENT_INFO no está definido en el .env");
-      return res.status(500).json({ error: "AIMEDICI_AGENT_INFO no definido" });
-    }
 
-    // Seleccionar el destinatario actual usando el round-robin exclusivo de AIMedici
-    const recipient = aimediciRecipients[aimediciRoundRobinIndex];
-    console.log("Destinatario AIMedici seleccionado:", recipient);
-    aimediciRoundRobinIndex = (aimediciRoundRobinIndex + 1) % aimediciRecipients.length;
-    console.log("Nuevo índice round-robin AIMedici:", aimediciRoundRobinIndex);
+        // Seleccionar el destinatario actual usando el round-robin exclusivo de AIMedici
+        const recipient = aimediciRecipients[aimediciRoundRobinIndex];
+        console.log("Destinatario AIMedici seleccionado:", recipient);
+        aimediciRoundRobinIndex = (aimediciRoundRobinIndex + 1) % aimediciRecipients.length;
+        console.log("Nuevo índice round-robin AIMedici:", aimediciRoundRobinIndex);
 
-    // Obtener la hoja privada del agente correspondiente
-    const agentSheetId = aimediciAgentSheetMapping[recipient];
-    if (!agentSheetId) {
-      console.error(`No se ha configurado una hoja para el agente ${recipient}`);
-      return res.status(500).json({ error: "Configuración de hoja privada faltante para el agente AIMedici" });
-    }
+        // Obtener la hoja privada del agente correspondiente
+        const agentSheetId = aimediciAgentSheetMapping[recipient];
+        if (!agentSheetId) {
+            console.error(`No se ha configurado una hoja para el agente ${recipient}`);
+            return res.status(500).json({ error: "Configuración de hoja privada faltante para el agente AIMedici" });
+        }
 
-    // Guardar los datos en la hoja privada del agente de AIMedici
-    console.log(`Guardando datos en la hoja del agente AIMedici ${recipient} (Sheet ID: ${agentSheetId})...`);
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: agentSheetId,
-      range: "AIMedici.it!A1:J1", // Ajusta el rango según la estructura de la hoja
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [
-          [
-            new Date().toLocaleString("it-IT"),
-            nome,
-            cognome,
-            financingScope,
-            importoRichiesto,
-            cittaResidenza,
-            provinciaResidenza,
-            mail,
-            telefono,
-            privacyAccepted ? "SI" : "NO"
-          ]
-        ]
-      }
-    });
-    console.log("Datos guardados correctamente en la hoja del agente AIMedici.");
+        // Guardar los datos en la hoja privada del agente de AIMedici
+        console.log(`Guardando datos en la hoja del agente AIMedici ${recipient} (Sheet ID: ${agentSheetId})...`);
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: agentSheetId,
+            range: "AIMedici.it!A1:J1", // Ajusta el rango según la estructura de la hoja
+            valueInputOption: "USER_ENTERED",
+            requestBody: {
+                values: [
+                    [
+                        new Date().toLocaleString("it-IT"),
+                        nome,
+                        cognome,
+                        financingScope,
+                        importoRichiesto,
+                        cittaResidenza,
+                        provinciaResidenza,
+                        mail,
+                        telefono,
+                        privacyAccepted ? "SI" : "NO"
+                    ]
+                ]
+            }
+        });
+        console.log("Datos guardados correctamente en la hoja del agente AIMedici.");
 
-    // Preparar el contenido del correo para el agente (mismo estilo que en los otros endpoints)
-    const subjectAgent = "Nuovo Lead Medico";
-    const textBodyAgent = `
+        // Preparar el contenido del correo para el agente (mismo estilo que en los otros endpoints)
+        const subjectAgent = "Nuovo Lead Medico";
+        const textBodyAgent = `
 Nuovo Lead Medico
 
 Nome: ${nome}
@@ -861,8 +844,8 @@ Importo richiesto: ${importoRichiesto}
 Città di residenza: ${cittaResidenza}
 Provincia: ${provinciaResidenza}
 Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
-    `;
-    const htmlBodyAgent = `
+        `;
+        const htmlBodyAgent = `
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -905,26 +888,26 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
   </div>
 </body>
 </html>
-    `;
+        `;
 
-    const emailDataAgent = {
-      from: "€ugenio IA <eugenioia@resend.dev>",
-      to: recipient, // Agente asignado
-      subject: subjectAgent,
-      text: textBodyAgent,
-      html: htmlBodyAgent
-    };
+        const emailDataAgent = {
+            from: "€ugenio IA <eugenioia@resend.dev>",
+            to: recipient, // Agente asignado
+            subject: subjectAgent,
+            text: textBodyAgent,
+            html: htmlBodyAgent
+        };
 
-    console.log("Enviando correo al agente AIMedici...");
-    await resend.emails.send(emailDataAgent);
-    console.log("Correo enviado con éxito al agente AIMedici.");
+        console.log("Enviando correo al agente AIMedici...");
+        await resend.emails.send(emailDataAgent);
+        console.log("Correo enviado con éxito al agente AIMedici.");
 
-    // Preparar el correo para el cliente utilizando la información del agente asignado
-    const agentInfo = aimediciAgentInfoMapping[recipient];
-    const clientName = `${nome} ${cognome}`.trim() || 'Cliente';
+        // Preparar el correo para el cliente utilizando la información del agente asignado
+        const agentInfo = aimediciAgentInfoMapping[recipient];
+        const clientName = `${nome} ${cognome}`.trim() || 'Cliente';
 
-    const subjectClient = "Conosci il tuo agente per il settore pensioni - Creditplan";
-    const textBodyClient = `
+        const subjectClient = "Conosci il tuo agente per il settore pensioni - Creditplan";
+        const textBodyClient = `
 Hola ${clientName},
 
 Grazie per averci inviato la tua informazione. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'il nostro agente'}.
@@ -933,8 +916,8 @@ Se lo desideri, puoi anche fissare una chiamata cliccando sul seguente link: ${a
 
 Cordiali saluti,
 AIQuinto
-    `;
-    const htmlBodyClient = `
+        `;
+        const htmlBodyClient = `
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -985,25 +968,25 @@ AIQuinto
   </div>
 </body>
 </html>
-    `;
+        `;
 
-    const emailDataClient = {
-      from: "AIQuinto <eugenioia@resend.dev>",
-      to: mail,
-      subject: subjectClient,
-      text: textBodyClient,
-      html: htmlBodyClient
-    };
+        const emailDataClient = {
+            from: "AIQuinto <eugenioia@resend.dev>",
+            to: mail,
+            subject: subjectClient,
+            text: textBodyClient,
+            html: htmlBodyClient
+        };
 
-    console.log("Enviando correo al cliente AIMedici...");
-    await resend.emails.send(emailDataClient);
-    console.log("Correo enviado con éxito al cliente AIMedici:", mail);
+        console.log("Enviando correo al cliente AIMedici...");
+        await resend.emails.send(emailDataClient);
+        console.log("Correo enviado con éxito al cliente AIMedici:", mail);
 
-    res.status(200).json({ message: "Dati salvati e email inviata con successo" });
-  } catch (error) {
-    console.error("Errore nell'invio dei dati o dell'email:", error);
-    res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
-  }
+        res.status(200).json({ message: "Dati salvati e email inviata con successo" });
+    } catch (error) {
+        console.error("Errore nell'invio dei dati o dell'email:", error);
+        res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
+    }
 });
 
 // Endpoint para "aifidi"
