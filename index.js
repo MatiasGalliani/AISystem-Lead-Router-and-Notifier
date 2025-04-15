@@ -733,49 +733,108 @@ app.post("/dipendente", async (req, res) => {
     }
 });
 
-// Endpoint para "aimediciform"
+// Declaramos la variable de round robin exclusiva para AIMedici
+let aimediciRoundRobinIndex = 0;
+
 app.post("/aimediciform", async (req, res) => {
-    const {
-        financingScope,
-        importoRichiesto,
-        cittaResidenza,
-        provinciaResidenza,
-        nome,
-        cognome,
-        mail,
-        telefono,
-        privacyAccepted
-    } = req.body;
+  const {
+    financingScope,
+    importoRichiesto,
+    cittaResidenza,
+    provinciaResidenza,
+    nome,
+    cognome,
+    mail,
+    telefono,
+    privacyAccepted
+  } = req.body;
 
-    try {
-        const sheets = await getGoogleSheetsClient();
-        const sheetId = process.env.GOOGLE_SHEET_ID;
+  try {
+    // Autenticación y configuración de Google Sheets
+    const sheets = await getGoogleSheetsClient();
 
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: sheetId,
-            range: "AIMedici.it!A1:J1",
-            valueInputOption: "USER_ENTERED",
-            resource: {
-                values: [
-                    [
-                        new Date().toLocaleString("it-IT"),
-                        nome,
-                        cognome,
-                        financingScope,
-                        importoRichiesto,
-                        cittaResidenza,
-                        provinciaResidenza,
-                        mail,
-                        telefono,
-                        privacyAccepted ? "SI" : "NO",
-                    ],
-                ],
-            },
-        });
+    // Convertir la variable AIMEDICI_RECIPIENTS en un array
+    const aimediciRecipients = process.env.AIMEDICI_RECIPIENTS
+      ? process.env.AIMEDICI_RECIPIENTS.split(',').map(e => e.trim())
+      : [];
+    if (aimediciRecipients.length === 0) {
+      console.error("No hay destinatarios configurados en AIMEDICI_RECIPIENTS");
+      return res.status(500).json({ error: "AIMEDICI_RECIPIENTS no configurado" });
+    }
 
-        // Preparar email de notificación para lead medico
-        const subject = "Nuovo Lead Medico";
-        const textBody = `
+    // Convertir la variable AIMEDICI_AGENT_SHEET_MAPPING en un objeto
+    const aimediciAgentSheetMapping = {};
+    if (process.env.AIMEDICI_AGENT_SHEET_MAPPING) {
+      process.env.AIMEDICI_AGENT_SHEET_MAPPING.split(',').forEach(pair => {
+        const [email, sheetId] = pair.split(':').map(s => s.trim());
+        if (email && sheetId) {
+          aimediciAgentSheetMapping[email] = sheetId;
+        }
+      });
+    } else {
+      console.error("AIMEDICI_AGENT_SHEET_MAPPING no definido en el .env");
+      return res.status(500).json({ error: "AIMEDICI_AGENT_SHEET_MAPPING no definido" });
+    }
+
+    // Convertir la variable AIMEDICI_AGENT_INFO en un objeto
+    const aimediciAgentInfoMapping = {};
+    if (process.env.AIMEDICI_AGENT_INFO) {
+      process.env.AIMEDICI_AGENT_INFO.split(',').forEach(pair => {
+        // Usamos ':' como delimitador (puedes ajustar si lo prefieres con otro delimitador)
+        const parts = pair.split(':').map(s => s.trim());
+        if (parts.length === 4) {
+          const [email, name, phone, calendly] = parts;
+          aimediciAgentInfoMapping[email] = { name, phone, calendly };
+        } else {
+          console.error("Formato incorrecto en AIMEDICI_AGENT_INFO para:", pair);
+        }
+      });
+    } else {
+      console.error("AIMEDICI_AGENT_INFO no está definido en el .env");
+      return res.status(500).json({ error: "AIMEDICI_AGENT_INFO no definido" });
+    }
+
+    // Seleccionar el destinatario actual usando el round-robin exclusivo de AIMedici
+    const recipient = aimediciRecipients[aimediciRoundRobinIndex];
+    console.log("Destinatario AIMedici seleccionado:", recipient);
+    aimediciRoundRobinIndex = (aimediciRoundRobinIndex + 1) % aimediciRecipients.length;
+    console.log("Nuevo índice round-robin AIMedici:", aimediciRoundRobinIndex);
+
+    // Obtener la hoja privada del agente correspondiente
+    const agentSheetId = aimediciAgentSheetMapping[recipient];
+    if (!agentSheetId) {
+      console.error(`No se ha configurado una hoja para el agente ${recipient}`);
+      return res.status(500).json({ error: "Configuración de hoja privada faltante para el agente AIMedici" });
+    }
+
+    // Guardar los datos en la hoja privada del agente de AIMedici
+    console.log(`Guardando datos en la hoja del agente AIMedici ${recipient} (Sheet ID: ${agentSheetId})...`);
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: agentSheetId,
+      range: "AIMedici.it!A1:J1", // Ajusta el rango según la estructura de la hoja
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [
+          [
+            new Date().toLocaleString("it-IT"),
+            nome,
+            cognome,
+            financingScope,
+            importoRichiesto,
+            cittaResidenza,
+            provinciaResidenza,
+            mail,
+            telefono,
+            privacyAccepted ? "SI" : "NO"
+          ]
+        ]
+      }
+    });
+    console.log("Datos guardados correctamente en la hoja del agente AIMedici.");
+
+    // Preparar el contenido del correo para el agente (mismo estilo que en los otros endpoints)
+    const subjectAgent = "Nuovo Lead Medico";
+    const textBodyAgent = `
 Nuovo Lead Medico
 
 Nome: ${nome}
@@ -787,38 +846,149 @@ Importo richiesto: ${importoRichiesto}
 Città di residenza: ${cittaResidenza}
 Provincia: ${provinciaResidenza}
 Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
-`;
-        const htmlBody = `
-<html>
-  <body>
-    <h3>Nuovo Lead Medico</h3>
-    <p><strong>Nome:</strong> ${nome}</p>
-    <p><strong>Cognome:</strong> ${cognome}</p>
-    <p><strong>Email:</strong> ${mail}</p>
-    <p><strong>Telefono:</strong> ${telefono}</p>
-    <p><strong>Scopo del finanziamento:</strong> ${financingScope}</p>
-    <p><strong>Importo richiesto:</strong> ${importoRichiesto}</p>
-    <p><strong>Città di residenza:</strong> ${cittaResidenza}</p>
-    <p><strong>Provincia:</strong> ${provinciaResidenza}</p>
-    <p><strong>Privacy accettata:</strong> ${privacyAccepted ? "SI" : "NO"}</p>
-  </body>
+    `;
+    const htmlBodyAgent = `
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nuovo Lead Medico</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+    .header { background-color: #007bff; color: #fff; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+    .logo { max-width: 150px; height: auto; margin-bottom: 10px; }
+    .content { padding: 20px; }
+    .data-item { margin-bottom: 10px; }
+    .label { font-weight: bold; }
+    .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #777; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Nuovo Lead Medico</h2>
+    </div>
+    <div class="content">
+      <p>Ciao,</p>
+      <p>È arrivato un nuovo lead medico con i seguenti dettagli:</p>
+      <div class="data-item"><span class="label">Nome:</span> ${nome}</div>
+      <div class="data-item"><span class="label">Cognome:</span> ${cognome}</div>
+      <div class="data-item"><span class="label">Email:</span> ${mail}</div>
+      <div class="data-item"><span class="label">Telefono:</span> ${telefono}</div>
+      <div class="data-item"><span class="label">Scopo del finanziamento:</span> ${financingScope}</div>
+      <div class="data-item"><span class="label">Importo richiesto:</span> ${importoRichiesto}</div>
+      <div class="data-item"><span class="label">Città di residenza:</span> ${cittaResidenza}</div>
+      <div class="data-item"><span class="label">Provincia:</span> ${provinciaResidenza}</div>
+      <div class="data-item"><span class="label">Privacy accettata:</span> ${privacyAccepted ? "SI" : "NO"}</div>
+    </div>
+    <div class="footer">
+      <p>Saluti</p>
+      <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px;" />
+    </div>
+  </div>
+</body>
 </html>
-`;
-        const emailData = {
-            from: "€ugenio IA <eugenioia@resend.dev>",
-            to: "nicofalcinelli@creditplan.it",
-            subject,
-            text: textBody,
-            html: htmlBody
-        };
+    `;
 
-        await resend.emails.send(emailData);
+    const emailDataAgent = {
+      from: "€ugenio IA <eugenioia@resend.dev>",
+      to: recipient, // Agente asignado
+      subject: subjectAgent,
+      text: textBodyAgent,
+      html: htmlBodyAgent
+    };
 
-        res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
-    } catch (error) {
-        console.error("Errore nell'invio dei dati o dell'email:", error);
-        res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
-    }
+    console.log("Enviando correo al agente AIMedici...");
+    await resend.emails.send(emailDataAgent);
+    console.log("Correo enviado con éxito al agente AIMedici.");
+
+    // Preparar el correo para el cliente utilizando la información del agente asignado
+    const agentInfo = aimediciAgentInfoMapping[recipient];
+    const clientName = `${nome} ${cognome}`.trim() || 'Cliente';
+
+    const subjectClient = "Conosci il tuo agente per il settore pensioni - Creditplan";
+    const textBodyClient = `
+Hola ${clientName},
+
+Grazie per averci inviato la tua informazione. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'il nostro agente'}.
+${agentInfo ? "Puoi contattarlo al " + agentInfo.phone : ""}
+Se lo desideri, puoi anche fissare una chiamata cliccando sul seguente link: ${agentInfo && agentInfo.calendly ? agentInfo.calendly : ""}
+
+Cordiali saluti,
+AIQuinto
+    `;
+    const htmlBodyClient = `
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conosci il tuo agente in Creditplan</title>
+</head>
+<body style="background-color: #eff6ff; margin: 0; padding: 0;">
+  <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+    <div>
+      <img src="https://i.imgur.com/dI27u5K.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
+    </div>
+    <div style="text-align: center; padding: 1rem 0;">
+      <span style="font-size: 2.25rem; font-weight: bold; color: #1e3a8a;">Grazie!</span>
+    </div>
+    <div style="padding: 1.5rem; color: #4a5568;">
+      <p style="margin-bottom: 1rem;">Ciao <strong>${clientName},</strong></p>
+      <p style="margin-bottom: 1rem;">
+        Ti ringraziamo per aver scelto Creditplan per le tue esigenze finanziarie. Siamo qui per aiutarti con tutte le informazioni di cui hai bisogno.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Il nostro sistema ha processato la tua richiesta e ti è stato assegnato un agente dedicato che ti fornirà tutte le informazioni necessarie.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro specialista'}</strong>.
+      </p>
+      <p style="margin-bottom: 1rem;">
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure fissare una chiamata utilizzando il link qui sotto:
+      </p>
+      <div style="text-align: center;">
+        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" 
+           style="display: inline-block; padding: 0.5rem 1.5rem; background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          Fissa una chiamata
+        </a>
+      </div>
+      <p style="margin-top: 1.5rem;">
+        Siamo certi che il nostro team saprà offrirti la migliore consulenza per le tue necessità finanziarie.
+      </p>
+      <p style="margin-top: 0.5rem;">
+        Cordiali saluti,<br>
+        Il team di Creditplan
+      </p>
+    </div>
+    <div style="background-color: #eff6ff; padding: 1rem; text-align: center; font-size: 0.875rem; color: #718096; border-top: 1px solid #e2e8f0;">
+      &copy; 2025 Creditplan Società di Mediazione Creditizia. Tutti i diritti riservati.<br>
+      Via Giacomo Tosi 3, Monza, MB (20900)
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    const emailDataClient = {
+      from: "AIQuinto <eugenioia@resend.dev>",
+      to: mail,
+      subject: subjectClient,
+      text: textBodyClient,
+      html: htmlBodyClient
+    };
+
+    console.log("Enviando correo al cliente AIMedici...");
+    await resend.emails.send(emailDataClient);
+    console.log("Correo enviado con éxito al cliente AIMedici:", mail);
+
+    res.status(200).json({ message: "Dati salvati e email inviata con successo" });
+  } catch (error) {
+    console.error("Errore nell'invio dei dati o dell'email:", error);
+    res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
+  }
 });
 
 // Endpoint para "aifidi"
