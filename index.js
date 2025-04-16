@@ -1233,7 +1233,7 @@ AIFidi.it by Creditplan
     `;
 
     const emailDataClient = {
-      from: "AIFidi.it by Creditplan <eugenioia@resend.dev>",
+      from: "AIFidi.it by Creditplan <aifidi@transactional.creditplan.it>",
       to: mail,
       subject: subjectClient,
       text: textBodyClient,
