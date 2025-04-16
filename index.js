@@ -1153,7 +1153,7 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
     `;
 
     const emailDataAgent = {
-      from: "AIFidi.it <eugenioia@resend.dev>", // Remitente adaptado a AIFidi
+      from: "AIFidi.it <aifidi@transactional.creditplan.it>",
       to: recipient,
       subject: subjectAgent,
       text: textBodyAgent,
