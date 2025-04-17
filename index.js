@@ -170,7 +170,7 @@ Saluti,
       </div>
       <div class="footer">
         <p>Saluti</p>
-        <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px;" />
+        <img class="logo" src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/logo_eugenio.png" alt="€ugenio IA" style="width: 150px;" />
       </div>
     </div>
   </body>
@@ -213,7 +213,7 @@ AIQuinto`;
   <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
     <!-- Header: imagen con URL absoluto -->
     <div>
-      <img src="https://i.imgur.com/1avwDd5.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
+      <img src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/aiquinto_mail_header_client.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
     </div>
     <!-- Título -->
     <div style="text-align: center; padding: 1rem 0;">
@@ -405,7 +405,7 @@ app.post("/pensionato", async (req, res) => {
       </div>
       <div class="footer">
         <p>Saluti</p>
-        <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px;" />
+        <img class="logo" src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/logo_eugenio.png" alt="€ugenio IA" style="width: 150px;" />
       </div>
     </div>
   </body>
@@ -444,7 +444,7 @@ app.post("/pensionato", async (req, res) => {
 <body style="background-color: #eff6ff; margin: 0; padding: 0;">
   <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
     <div>
-      <img src="https://i.imgur.com/1avwDd5.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
+      <img src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/aiquinto_mail_header_client.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
     </div>
     <div style="text-align: center; padding: 1rem 0;">
       <span style="font-size: 2.25rem; font-weight: bold; color: #1e3a8a;">Grazie!</span>
@@ -635,7 +635,7 @@ app.post("/dipendente", async (req, res) => {
       </div>
       <div class="footer">
         <p>Saluti</p>
-        <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px;" />
+        <img class="logo" src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/logo_eugenio.png" alt="€ugenio IA" style="width: 150px;" />
       </div>
     </div>
   </body>
@@ -674,7 +674,7 @@ app.post("/dipendente", async (req, res) => {
 <body style="background-color: #eff6ff; margin: 0; padding: 0;">
   <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
     <div>
-      <img src="https://i.imgur.com/1avwDd5.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
+      <img src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/aiquinto_mail_header_client.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
     </div>
     <div style="text-align: center; padding: 1rem 0;">
       <span style="font-size: 2.25rem; font-weight: bold; color: #1e3a8a;">Grazie!</span>
@@ -886,7 +886,7 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
     </div>
     <div class="footer">
       <p>Saluti</p>
-      <img class="logo" src="https://i.imgur.com/Wzz0KLR.png" alt="€ugenio IA" style="width: 150px;" />
+      <img class="logo" src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/logo_eugenio.png" alt="€ugenio IA" style="width: 150px;" />
     </div>
   </div>
 </body>
@@ -1148,7 +1148,7 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
     </div>
     <div class="footer">
       <p>Saluti</p>
-      <img class="logo" src="https://i.imgur.com/RLXJM3w.png" alt="AIFidi.it" style="width: 150px;" />
+      <img class="logo" src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/logo_eugenio.png" alt="AIFidi.it" style="width: 150px;" />
     </div>
   </div>
 </body>
@@ -1193,7 +1193,7 @@ AIFidi.it by Creditplan
 <body style="background-color: #eff6ff; margin: 0; padding: 0;">
   <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
     <div>
-      <img src="https://i.imgur.com/RLXJM3w.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
+      <img src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/aifidi_mail_header_client.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
     </div>
     <div style="text-align: center; padding: 1rem 0;">
       <span style="font-size: 2.25rem; font-weight: bold; color: #1e3a8a;">Grazie!</span>
