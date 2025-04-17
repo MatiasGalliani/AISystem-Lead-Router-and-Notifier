@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const { google } = require('googleapis');
 const { Resend } = require("resend");
 const app = express();
@@ -7,6 +8,8 @@ require('dotenv').config();
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/assets', express.static(path.join(__dirname, 'public/images')));
 
 const PORT = process.env.PORT || 3500;
 
@@ -928,7 +931,7 @@ AIQuinto
 <body style="background-color: #eff6ff; margin: 0; padding: 0;">
   <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
     <div>
-      <img src="https://i.imgur.com/gNiI32a.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
+      <img src="https://backend-richiedidiessereconttato-production.up.railway.app/assets/aimedici_mail_header_client.png" alt="Intestazione della Mail" style="width: 100%; display: block;">
     </div>
     <div style="text-align: center; padding: 1rem 0;">
       <span style="font-size: 2.25rem; font-weight: bold; color: #1e3a8a;">Grazie!</span>
