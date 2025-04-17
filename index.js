@@ -174,7 +174,7 @@ Saluti,
 </html>`;
 
         const emailDataAgent = {
-            from: "€ugenio IA <eugenioia@resend.dev>",
+            from: "AIQuinto.it <aiquinto@transactional.creditplan.it>",
             to: recipient,
             subject: "Nuovo Lead di Contatto Manuale",
             text: textBodyAgent,
@@ -258,7 +258,7 @@ AIQuinto`;
 `;
 
         const emailDataClient = {
-            from: "AIQuinto <eugenioia@resend.dev>", // Usa un remitente verificado en producción
+            from: "AIQuinto.it <aiquinto@transactional.creditplan.it>", // Usa un remitente verificado en producción
             to: emailField,  // Correo del cliente
             subject: "Conosci al tuo Consulente per la Cessione del Quinto con Creditplan",
             text: textBodyClient,
@@ -410,7 +410,7 @@ app.post("/pensionato", async (req, res) => {
 `;
 
         const emailDataAgent = {
-            from: "€ugenio IA <eugenioia@resend.dev>",
+            from: "AIQuinto.it <aiquinto@transactional.creditplan.it>",
             to: recipient, // El agente asignado
             subject: "Nuovo Lead Pensionato",
             text: textBodyAgent,
@@ -484,7 +484,7 @@ app.post("/pensionato", async (req, res) => {
 `;
 
         const emailDataClient = {
-            from: "AIQuinto <eugenioia@resend.dev>",
+            from: "AIQuinto.it <aiquinto@transactional.creditplan.it>",
             to: mail,
             subject: "Conosci il tuo consulente per la Cessione del Quinto con Creditplan",
             text: textBodyClient,
@@ -640,7 +640,7 @@ app.post("/dipendente", async (req, res) => {
 `;
 
         const emailDataAgent = {
-            from: "€ugenio IA <eugenioia@resend.dev>",
+            from: "AIQuinto.it <aiquinto@transactional.creditplan.it>",
             to: recipient, // El agente asignado
             subject: "Nuovo Lead Dipendente",
             text: textBodyAgent,
@@ -714,7 +714,7 @@ app.post("/dipendente", async (req, res) => {
 `;
 
         const emailDataClient = {
-            from: "AIQuinto <eugenioia@resend.dev>",
+            from: "AIQuinto.it <aiquinto@transactional.creditplan.it>",
             to: mail,
             subject: "Conosci il tuo consulente per la Cessione del Quinto con Creditplan",
             text: textBodyClient,
@@ -891,7 +891,7 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
         `;
 
         const emailDataAgent = {
-            from: "€ugenio IA <eugenioia@resend.dev>",
+            from: "AIMedici.it <aimedici@transactional.creditplan.it>",
             to: recipient, // Agente asignado
             subject: subjectAgent,
             text: textBodyAgent,
@@ -971,7 +971,7 @@ AIQuinto
         `;
 
         const emailDataClient = {
-            from: "AIMedici.it <eugenioia@resend.dev>",
+            from: "AIMedici.it <aimedici@transactional.creditplan.it>",
             to: mail,
             subject: subjectClient,
             text: textBodyClient,
