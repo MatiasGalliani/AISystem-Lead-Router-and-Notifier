@@ -35,6 +35,7 @@ const manualRecipients = process.env.MANUAL_RECIPIENTS
     ? process.env.MANUAL_RECIPIENTS.split(',').map(email => email.trim())
     : [];
 
+    
 if (manualRecipients.length === 0) {
     console.error("No hay destinatarios configurados en MANUAL_RECIPIENTS");
     process.exit(1);
@@ -132,7 +133,7 @@ app.post('/manuale_aiquinto', async (req, res) => {
         const textBodyAgent =
             `Nuovo Lead di Contatto Manuale
 Ciao,
-È arrivato un nuovo lead manuale su AIQuinto.it con i seguenti detalles:
+È arrivato un nuovo lead manuale su AIQuinto.it con i seguenti dettagli:
 Nome: ${nome}
 Cognome: ${cognome}
 Email: ${emailField}
@@ -162,7 +163,7 @@ Saluti,
       </div>
       <div class="content">
         <p>Ciao,</p>
-        <p>È arrivato un nuovo lead manuale con i seguenti detalles:</p>
+        <p>È arrivato un nuovo lead manuale con i seguenti dettagli:</p>
         <div class="data-item"><span class="label">Nome:</span> ${nome}</div>
         <div class="data-item"><span class="label">Cognome:</span> ${cognome}</div>
         <div class="data-item"><span class="label">Email:</span> ${emailField}</div>
