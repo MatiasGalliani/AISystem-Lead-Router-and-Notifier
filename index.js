@@ -520,7 +520,9 @@ app.post("/dipendente", async (req, res) => {
         contractType,
         birthDate,
         province,
-        privacyAccepted
+        privacyAccepted,
+        employmentDate,
+        numEmployees,
     } = req.body;
 
     try {
@@ -534,7 +536,7 @@ app.post("/dipendente", async (req, res) => {
         // Guardar datos en Google Sheets
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
-            range: "Dipendenti!A1:M1",
+            range: "Dipendenti!A1:O1",
             valueInputOption: "USER_ENTERED",
             resource: {
                 values: [
@@ -551,6 +553,8 @@ app.post("/dipendente", async (req, res) => {
                         contractType,
                         birthDate,
                         province,
+                        employmentDate,
+                        numEmployees,
                         privacyAccepted ? "SI" : "NO"
                     ]
                 ]
@@ -576,9 +580,9 @@ app.post("/dipendente", async (req, res) => {
         console.log(`Guardando datos en la hoja del agente ${recipient} (Sheet ID: ${agentSheetId})...`);
         await sheets.spreadsheets.values.append({
             spreadsheetId: agentSheetId,
-            range: "Dipendenti!A1:M1", // Ajustar según la estructura de la hoja
+            range: "Dipendenti!A1:O1", // Ajustar según la estructura de la hoja
             valueInputOption: 'RAW',
-            requestBody: { values: [[currentDate, nome, cognome, mail, telefono, amountRequested, netSalary, depType, depType === "Privato" ? secondarySelection : "", contractType, birthDate, province, privacyAccepted ? "SI" : "NO"]] },
+            requestBody: { values: [[currentDate, nome, cognome, mail, telefono, amountRequested, netSalary, depType, depType === "Privato" ? secondarySelection : "", contractType, birthDate, province, employmentDate, numEmployees, privacyAccepted ? "SI" : "NO"]] },
         });
         console.log("Datos guardados correctamente en la hoja del agente.");
 
@@ -596,6 +600,8 @@ app.post("/dipendente", async (req, res) => {
             `Tipo di Contratto: ${contractType}\n` +
             `Data di Nascita: ${birthDate}\n` +
             `Provincia: ${province}\n` +
+            `Data di Assunzione: ${employmentDate}\n` +
+            `Numero di Dipendenti: ${numEmployees}\n` +
             `Privacy Accettata: ${privacyAccepted ? "SI" : "NO"}\n`;
 
         const htmlBodyAgent = `
@@ -632,6 +638,8 @@ app.post("/dipendente", async (req, res) => {
         <div class="data-item"><span class="label">Tipo di Contratto:</span> ${contractType}</div>
         <div class="data-item"><span class="label">Data di Nascita:</span> ${birthDate}</div>
         <div class="data-item"><span class="label">Provincia:</span> ${province}</div>
+        <div class="data-item"><span class="label">Data di Assunzione:</span> ${employmentDate}</div>
+        <div class="data-item"><span class="label">Numero di Dipendenti:</span> ${numEmployees}</div>
         <div class="data-item"><span class="label">Privacy Accettata:</span> ${privacyAccepted ? "SI" : "NO"}</div>
       </div>
       <div class="footer">
