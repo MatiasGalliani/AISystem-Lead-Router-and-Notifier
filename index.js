@@ -66,9 +66,9 @@ const agentInfoMapping = {};
 if (process.env.AGENT_INFO) {
     process.env.AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
-        if (parts.length === 4) {
-            const [email, name, phone, calendly] = parts;
-            agentInfoMapping[email] = { name, phone, calendly };
+        if (parts.length >= 3) { // Expect at least 3 parts: email, name, phone
+            const [email, name, phone] = parts.slice(0, 3); // Take only first 3 parts
+            agentInfoMapping[email] = { name, phone };
         } else {
             console.error("Formato incorrecto en AGENT_INFO para:", pair);
         }
@@ -198,7 +198,7 @@ Saluti,
             `Hola,
 Gracias por enviar tu información. Tu agente asignado es ${agentInfo ? agentInfo.name : 'nuestro agente'}.
 ${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}
-Si lo deseas, también puedes agendar una llamada: ${agentInfo && agentInfo.calendly ? agentInfo.calendly : ""}
+
 Saludos,
 AIQuinto`;
 
@@ -225,7 +225,7 @@ AIQuinto`;
       <!-- Mensaje introductorio -->
       <p style="margin-bottom: 1rem;">Ciao <strong>${clientName},</strong></p>
       <p style="margin-bottom: 1rem;">
-        <strong>Prima di tutto,</strong> ti ringraziamo per aver scelto Creditplan per le tue esigenze finanziarie. Siamo lieti di poterti supportare e ci impegniamo a fornirti l’assistenza più adeguata e personalizzata.
+        <strong>Prima di tutto,</strong> ti ringraziamo per aver scelto Creditplan per le tue esigenze finanziarie. Siamo lieti di poterti supportare e ci impegniamo a fornirti l'assistenza più adeguata e personalizzata.
       </p>
       <p style="margin-bottom: 1rem;">
         Il nostro sistema ha processato la tua richiesta e, in base alla nostra organizzazione, <strong>ti è stato assegnato un agente dedicato</strong> che si occuperà di fornirti tutte le informazioni necessarie e guidarti nel percorso.
@@ -235,14 +235,8 @@ AIQuinto`;
         Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro agente'}</strong>.
       </p>
       <p style="margin-bottom: 1rem;">
-        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure, se preferisci, fissare una chiamata utilizzando il link qui sotto.
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong>.
       </p>
-      <div style="text-align: center;">
-        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" 
-           style="display: inline-block; padding: 0.5rem 1.5rem; background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          Fissa una chiamata
-        </a>
-      </div>
       <p style="margin-top: 1.5rem;">
         Siamo certi che il nostro team saprà offrirti la migliore consulenza e supporto. Rimaniamo a tua completa disposizione per qualsiasi ulteriore informazione.
       </p>
@@ -262,7 +256,7 @@ AIQuinto`;
 `;
 
         const emailDataClient = {
-            from: "AIQuinto.it <aiquinto@transactional.creditplan.it>", // Usa un remitente verificado en producción
+            from: "AIQuinto.it <aiquinto@transactional.creditplan.it>",
             to: emailField,  // Correo del cliente
             subject: "Conosci al tuo Consulente per la Cessione del Quinto con Creditplan",
             text: textBodyClient,
@@ -431,8 +425,7 @@ app.post("/pensionato", async (req, res) => {
 
         const textBodyClient =
             `Hola ${clientName},\n\nGracias por enviarnos tu información. El agente asignado para ayudarte es ${agentInfo ? agentInfo.name : 'nuestro agente'}.\n` +
-            `${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}\n` +
-            `Si lo deseas, también puedes agendar una llamada usando el siguiente enlace: ${agentInfo && agentInfo.calendly ? agentInfo.calendly : ""}\n\nSaludos,\nAIQuinto`;
+            `${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}\n\nSaludos,\nAIQuinto`;
 
         const htmlBodyClient = `
 <!DOCTYPE html>
@@ -462,14 +455,8 @@ app.post("/pensionato", async (req, res) => {
         Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro specialista'}</strong>.
       </p>
       <p style="margin-bottom: 1rem;">
-        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure fissare una chiamata utilizzando il link qui sotto:
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong>.
       </p>
-      <div style="text-align: center;">
-        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" 
-           style="display: inline-block; padding: 0.5rem 1.5rem; background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          Fissa una chiamata
-        </a>
-      </div>
       <p style="margin-top: 1.5rem;">
         Siamo certi che il nostro team saprà offrirti la migliore consulenza per le tue necessità pensionistiche.
       </p>
@@ -499,7 +486,7 @@ app.post("/pensionato", async (req, res) => {
         await resend.emails.send(emailDataClient);
         console.log("Correo enviado con éxito al cliente.");
 
-        res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
+        res.status(200).json({ message: "Dati salvati y email inviata con éxito!" });
     } catch (error) {
         console.error("Errore nell'invio dei dati o dell'email:", error);
         res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
@@ -669,8 +656,7 @@ app.post("/dipendente", async (req, res) => {
 
         const textBodyClient =
             `Hola ${clientName},\n\nGracias por enviarnos tu información. El agente asignado para ayudarte es ${agentInfo ? agentInfo.name : 'nuestro agente'}.\n` +
-            `${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}\n` +
-            `Si lo deseas, también puedes agendar una llamada usando el siguiente enlace: ${agentInfo && agentInfo.calendly ? agentInfo.calendly : ""}\n\nSaludos,\nAIQuinto`;
+            `${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}\n\nSaludos,\nAIQuinto`;
 
         const htmlBodyClient = `
 <!DOCTYPE html>
@@ -691,23 +677,17 @@ app.post("/dipendente", async (req, res) => {
     <div style="padding: 1.5rem; color: #4a5568;">
       <p style="margin-bottom: 1rem;">Ciao <strong>${clientName},</strong></p>
       <p style="margin-bottom: 1rem;">
-        Ti ringraziamo per aver scelto Creditplan per le tue esigenze finanziarie. Siamo lieti di poterti supportare e ci impegniamo a fornirti l’assistenza più adeguata e personalizzata.
+        Ti ringraziamo per aver scelto Creditplan per le tue esigenze finanziarie. Siamo lieti di poterti supportare e ci impegniamo a fornirti l'assistenza più adeguata e personalizzata.
       </p>
       <p style="margin-bottom: 1rem;">
-        Il nostro sistema ha processato la tua richiesta e, in base alla nostra organizzazione, <strong>ti è stato assegnato un agente dedicato</strong> che si occuperà di fornirti tutte le informazioni necessarie.
+        Il nostro sistema ha processato la tua richiesta e, in base alla nostra organizzazione, <strong>ti è stato assegnato un agente dedicato</strong> che si occuperà di fornirti tutte le informazioni necessarie e guidarti nel percorso.
       </p>
       <p style="margin-bottom: 1rem;">
         Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro specialista'}</strong>.
       </p>
       <p style="margin-bottom: 1rem;">
-        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure fissare una chiamata utilizzando il link qui sotto:
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong>.
       </p>
-      <div style="text-align: center;">
-        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" 
-           style="display: inline-block; padding: 0.5rem 1.5rem; background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          Fissa una chiamata
-        </a>
-      </div>
       <p style="margin-top: 1.5rem;">
         Siamo certi che il nostro team saprà offrirti la migliore consulenza per le tue necessità finanziarie.
       </p>
@@ -737,7 +717,7 @@ app.post("/dipendente", async (req, res) => {
         await resend.emails.send(emailDataClient);
         console.log("Correo enviado con éxito al cliente.");
 
-        res.status(200).json({ message: "Dati dipendente salvati e email inviata con successo!" });
+        res.status(200).json({ message: "Dati salvati y email inviata con éxito!" });
     } catch (error) {
         console.error("Errore nell'invio dei dati dipendente:", error);
         res.status(500).json({ error: "Errore nell'invio dei dati dipendente" });
@@ -753,9 +733,9 @@ if (process.env.AIMEDICI_AGENT_INFO) {
     process.env.AIMEDICI_AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
         console.log("Procesando par:", pair, "->", parts);  // Debug: mostrar resultado del split
-        if (parts.length === 4) {
-            const [email, name, phone, calendly] = parts;
-            aimediciAgentInfoMapping[email] = { name, phone, calendly };
+        if (parts.length >= 3) { // Expect at least 3 parts: email, name, phone
+            const [email, name, phone] = parts.slice(0,3);
+            aimediciAgentInfoMapping[email] = { name, phone };
         } else {
             console.error("Formato incorrecto en AIMEDICI_AGENT_INFO para:", pair);
         }
@@ -924,10 +904,9 @@ Hola ${clientName},
 
 Grazie per averci inviato la tua informazione. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'il nostro agente'}.
 ${agentInfo ? "Puoi contattarlo al " + agentInfo.phone : ""}
-Se lo desideri, puoi anche fissare una chiamata cliccando sul seguente link: ${agentInfo && agentInfo.calendly ? agentInfo.calendly : ""}
 
 Cordiali saluti,
-AIQuinto
+AIMedici.it by Creditplan
         `;
         const htmlBodyClient = `
 <!DOCTYPE html>
@@ -935,7 +914,7 @@ AIQuinto
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Conosci il tuo agente in Creditplan</title>
+  <title>Conosci il tuo consulente AIMedici.it by Creditplan</title>
 </head>
 <body style="background-color: #eff6ff; margin: 0; padding: 0;">
   <div style="max-width: 32rem; margin: 0 auto; background: #ffffff; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
@@ -957,14 +936,8 @@ AIQuinto
         Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro specialista'}</strong>.
       </p>
       <p style="margin-bottom: 1rem;">
-        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure fissare una chiamata utilizzando il link qui sotto:
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong>.
       </p>
-      <div style="text-align: center;">
-        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" 
-           style="display: inline-block; padding: 0.5rem 1.5rem; background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          Fissa una chiamata
-        </a>
-      </div>
       <p style="margin-top: 1.5rem;">
         Siamo certi che il nostro team saprà offrirti la migliore consulenza per le tue necessità finanziarie.
       </p>
@@ -994,7 +967,7 @@ AIQuinto
         await resend.emails.send(emailDataClient);
         console.log("Correo enviado con éxito al cliente AIMedici:", mail);
 
-        res.status(200).json({ message: "Dati salvati e email inviata con successo" });
+        res.status(200).json({ message: "Dati salvati e email inviata con successo!" });
     } catch (error) {
         console.error("Errore nell'invio dei dati o dell'email:", error);
         res.status(500).json({ error: "Errore nell'invio dei dati o dell'email" });
@@ -1052,9 +1025,9 @@ app.post("/aifidi", async (req, res) => {
       process.env.AIFIDI_AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
         console.log("Procesando par:", pair, "->", parts);  // Debug: mostrar resultado del split
-        if (parts.length === 4) {
-          const [email, name, phone, calendly] = parts;
-          aifidiAgentInfoMapping[email] = { name, phone, calendly };
+        if (parts.length >= 3) { // Expect at least 3 parts: email, name, phone
+          const [email, name, phone] = parts.slice(0,3);
+          aifidiAgentInfoMapping[email] = { name, phone };
         } else {
           console.error("Formato incorrecto en AIFIDI_AGENT_INFO para:", pair);
         }
@@ -1186,7 +1159,6 @@ Hola ${clientName},
 
 Grazie per averci inviato la tua informazione. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'il nostro agente'}.
 ${agentInfo ? "Puoi contattarlo al " + agentInfo.phone : ""}
-Se lo desideri, puoi anche fissare una chiamata cliccando sul seguente link: ${agentInfo && agentInfo.calendly ? agentInfo.calendly : ""}
 
 Cordiali saluti,
 AIFidi.it by Creditplan
@@ -1219,14 +1191,8 @@ AIFidi.it by Creditplan
         Il tuo agente assegnato è <strong>${agentInfo ? agentInfo.name : 'il nostro specialista'}</strong>.
       </p>
       <p style="margin-bottom: 1rem;">
-        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong> oppure fissare una chiamata utilizzando il link qui sotto:
+        Puoi contattarlo direttamente al numero <strong>${agentInfo ? agentInfo.phone : ''}</strong>.
       </p>
-      <div style="text-align: center;">
-        <a href="${agentInfo && agentInfo.calendly ? agentInfo.calendly : '#'}" 
-           style="display: inline-block; padding: 0.5rem 1.5rem; background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          Fissa una chiamata
-        </a>
-      </div>
       <p style="margin-top: 1.5rem;">
         Siamo certi che il nostro team saprà offrirti la migliore consulenza per le tue necessità finanziarie.
       </p>
@@ -1245,7 +1211,7 @@ AIFidi.it by Creditplan
     `;
 
     const emailDataClient = {
-      from: "AIFidi.it by Creditplan <aifidi@transactional.creditplan.it>",
+      from: "AIFidi.it <aifidi@transactional.creditplan.it>",
       to: mail,
       subject: subjectClient,
       text: textBodyClient,
