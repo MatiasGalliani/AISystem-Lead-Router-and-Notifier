@@ -917,7 +917,7 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
 Ciao ${clientName},
 
 Grazie per averci inviato la tua informazione. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'il nostro agente'}.
-${agentInfo ? "Puoi contattarlo al " + agentInfo.phone : ""}
+${agentInfo ? "Puoi contattarlo al numero " + agentInfo.phone : ""}
 
 Cordiali saluti,
 AIMedici.it by Creditplan
@@ -1172,7 +1172,7 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
 Ciao ${clientName},
 
 Grazie per averci inviato la tua informazione. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'il nostro agente'}.
-${agentInfo ? "Puoi contattarlo al " + agentInfo.phone : ""}
+${agentInfo ? "Puoi contattarlo al numero " + agentInfo.phone : ""}
 
 Cordiali saluti,
 AIFidi.it by Creditplan
