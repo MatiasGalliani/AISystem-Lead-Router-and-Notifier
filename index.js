@@ -66,9 +66,9 @@ const agentInfoMapping = {};
 if (process.env.AGENT_INFO) {
     process.env.AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
-        if (parts.length >= 3) { // Expect at least 3 parts: email, name, phone
-            const [email, name, phone] = parts.slice(0, 3); // Take only first 3 parts
-            agentInfoMapping[email] = { name, phone };
+        if (parts.length >= 2) { // Expect at least 2 parts: email, name
+            const [email, name] = parts.slice(0, 2); // Take only first 2 parts
+            agentInfoMapping[email] = { name };
         } else {
             console.error("Formato incorrecto en AGENT_INFO para:", pair);
         }
@@ -195,11 +195,13 @@ Saluti,
             console.error(`No se encontró información para el agente ${recipient}`);
         }
         const textBodyClient =
-            `Hola,
-Gracias por enviar tu información. Tu agente asignado es ${agentInfo ? agentInfo.name : 'nuestro agente'}.
-${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}
+            `Ciao ${clientName},
 
-Saludos,
+Grazie per averci inviato la tua richiesta. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'un nostro agente'}.
+` +
+            `${agentInfo ? "Puoi contattarlo al numero " + agentInfo.phone : ""}
+
+Cordiali saluti,
 AIQuinto`;
 
         const htmlBodyClient = `
@@ -424,8 +426,14 @@ app.post("/pensionato", async (req, res) => {
         const clientName = `${nome} ${cognome}`;
 
         const textBodyClient =
-            `Hola ${clientName},\n\nGracias por enviarnos tu información. El agente asignado para ayudarte es ${agentInfo ? agentInfo.name : 'nuestro agente'}.\n` +
-            `${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}\n\nSaludos,\nAIQuinto`;
+            `Ciao ${clientName},
+
+Grazie per averci inviato la tua richiesta. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'un nostro agente'}.
+` +
+            `${agentInfo ? "Puoi contattarlo al numero " + agentInfo.phone : ""}
+
+Cordiali saluti,
+AIQuinto`;
 
         const htmlBodyClient = `
 <!DOCTYPE html>
@@ -655,8 +663,14 @@ app.post("/dipendente", async (req, res) => {
         const clientName = `${nome} ${cognome}`;
 
         const textBodyClient =
-            `Hola ${clientName},\n\nGracias por enviarnos tu información. El agente asignado para ayudarte es ${agentInfo ? agentInfo.name : 'nuestro agente'}.\n` +
-            `${agentInfo ? "Puedes contactarlo al " + agentInfo.phone : ""}\n\nSaludos,\nAIQuinto`;
+            `Ciao ${clientName},
+
+Grazie per averci inviato la tua richiesta. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'un nostro agente'}.
+` +
+            `${agentInfo ? "Puoi contattarlo al numero " + agentInfo.phone : ""}
+
+Cordiali saluti,
+AIQuinto`;
 
         const htmlBodyClient = `
 <!DOCTYPE html>
@@ -733,9 +747,9 @@ if (process.env.AIMEDICI_AGENT_INFO) {
     process.env.AIMEDICI_AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
         console.log("Procesando par:", pair, "->", parts);  // Debug: mostrar resultado del split
-        if (parts.length >= 3) { // Expect at least 3 parts: email, name, phone
-            const [email, name, phone] = parts.slice(0,3);
-            aimediciAgentInfoMapping[email] = { name, phone };
+        if (parts.length >= 2) { // Expect at least 2 parts: email, name
+            const [email, name] = parts.slice(0, 2);
+            aimediciAgentInfoMapping[email] = { name };
         } else {
             console.error("Formato incorrecto en AIMEDICI_AGENT_INFO para:", pair);
         }
@@ -900,7 +914,7 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
 
         const subjectClient = "Conosci il tuo consulente AIMedici.it by Creditplan";
         const textBodyClient = `
-Hola ${clientName},
+Ciao ${clientName},
 
 Grazie per averci inviato la tua informazione. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'il nostro agente'}.
 ${agentInfo ? "Puoi contattarlo al " + agentInfo.phone : ""}
@@ -1025,9 +1039,9 @@ app.post("/aifidi", async (req, res) => {
       process.env.AIFIDI_AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
         console.log("Procesando par:", pair, "->", parts);  // Debug: mostrar resultado del split
-        if (parts.length >= 3) { // Expect at least 3 parts: email, name, phone
-          const [email, name, phone] = parts.slice(0,3);
-          aifidiAgentInfoMapping[email] = { name, phone };
+        if (parts.length >= 2) { // Expect at least 2 parts: email, name
+          const [email, name] = parts.slice(0,2);
+          aifidiAgentInfoMapping[email] = { name };
         } else {
           console.error("Formato incorrecto en AIFIDI_AGENT_INFO para:", pair);
         }
@@ -1155,7 +1169,7 @@ Privacy accettata: ${privacyAccepted ? "SI" : "NO"}
 
     const subjectClient = "Conosci il tuo consulente AIFidi.it by Creditplan";
     const textBodyClient = `
-Hola ${clientName},
+Ciao ${clientName},
 
 Grazie per averci inviato la tua informazione. L'agente assegnato per aiutarti è ${agentInfo ? agentInfo.name : 'il nostro agente'}.
 ${agentInfo ? "Puoi contattarlo al " + agentInfo.phone : ""}
