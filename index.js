@@ -66,9 +66,9 @@ const agentInfoMapping = {};
 if (process.env.AGENT_INFO) {
     process.env.AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
-        if (parts.length >= 2) { // Expect at least 2 parts: email, name
-            const [email, name] = parts.slice(0, 2); // Take only first 2 parts
-            agentInfoMapping[email] = { name };
+        if (parts.length >= 3) { // Ensure at least email, name, and phone are present
+            const [email, name, phone] = parts.slice(0, 3); // Extract the first three parts
+            agentInfoMapping[email] = { name, phone }; // Store name and phone
         } else {
             console.error("Formato incorrecto en AGENT_INFO para:", pair);
         }
@@ -747,9 +747,9 @@ if (process.env.AIMEDICI_AGENT_INFO) {
     process.env.AIMEDICI_AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
         console.log("Procesando par:", pair, "->", parts);  // Debug: mostrar resultado del split
-        if (parts.length >= 2) { // Expect at least 2 parts: email, name
-            const [email, name] = parts.slice(0, 2);
-            aimediciAgentInfoMapping[email] = { name };
+        if (parts.length >= 3) { // Ensure at least email, name, and phone are present
+            const [email, name, phone] = parts.slice(0,3);
+            aimediciAgentInfoMapping[email] = { name, phone }; // Store name and phone
         } else {
             console.error("Formato incorrecto en AIMEDICI_AGENT_INFO para:", pair);
         }
@@ -1039,9 +1039,9 @@ app.post("/aifidi", async (req, res) => {
       process.env.AIFIDI_AGENT_INFO.split(',').forEach(pair => {
         const parts = pair.split('|').map(s => s.trim());
         console.log("Procesando par:", pair, "->", parts);  // Debug: mostrar resultado del split
-        if (parts.length >= 2) { // Expect at least 2 parts: email, name
-          const [email, name] = parts.slice(0,2);
-          aifidiAgentInfoMapping[email] = { name };
+        if (parts.length >= 3) { // Ensure at least email, name, and phone are present
+          const [email, name, phone] = parts.slice(0,3);
+          aifidiAgentInfoMapping[email] = { name, phone }; // Store name and phone
         } else {
           console.error("Formato incorrecto en AIFIDI_AGENT_INFO para:", pair);
         }
