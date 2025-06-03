@@ -17,8 +17,10 @@ const PORT = process.env.PORT || 3500;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function getGoogleSheetsClient() {
+
+  const serviceAccount = JSON.parse(process.env.GOOGLE_CREDENTIALS);
     const auth = new google.auth.GoogleAuth({
-        keyFile: "./credenciales.json",
+        credentials: serviceAccount,
         scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
     const authClient = await auth.getClient();
